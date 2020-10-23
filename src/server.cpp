@@ -1,5 +1,8 @@
 #include "server.h"
 
+/**
+ * binds a host:port socket, then calls this->Listen to listen for incoming connections
+ */
 Server::Server(const std::string& host, const unsigned short port)
     : host(std::move(host)), port(port)
 {
@@ -20,12 +23,15 @@ Server::Server(const std::string& host, const unsigned short port)
     this->Listen();
 }
 
+// closes the server socket
 Server::~Server()
 {
     close(this->sockfd);
 }
 
-// listen for incoming connections and spawn threads
+/**
+ * listen for incoming connections and spawn threads for each connection
+ */
 void Server::Listen()
 {
     if (listen(this->sockfd, SOMAXCONN) < 0) {
@@ -51,16 +57,22 @@ void Server::Listen()
     }
 }
 
+/**
+ * handles a single client connection
+ */
 void Server::handleConnection(int client) {
+    // allocate stack buffers for host and service strings
     char host[NI_MAXHOST];
     char svc[NI_MAXSERV];
 
+    // set all chars to null in each buffer
     memset(host, 0, NI_MAXHOST);
     memset(svc, 0, NI_MAXSERV);
     
     // resolve a hostname if possible
     int result = getnameinfo((sockaddr*)&this->clientAddress, sizeof(this->clientAddress), host, NI_MAXHOST, svc, NI_MAXSERV, 0);
 
+    // if hostname resolved, print it, else print the IP
     if (result) {
         std::cout << host << " connected on " << svc << std::endl;
     } else {
@@ -68,24 +80,30 @@ void Server::handleConnection(int client) {
         std::cout << host << " connected on " << ntohs(this->clientAddress.sin_port) << std::endl;
     }
 
+    // allocate a stack buffer for recieved data
     char buf[4096];
 
-    // read and handle bytes
+    // read and handle bytes until the connection ends
     while (true) {
+        // set the recv buffer to null chars
         memset(buf, 0, 4096);
 
+        // read data incoming from the client into the recv buffer
         int bytesRecv = recv(client, buf, 4096, 0);
+
         switch (bytesRecv) {
             case -1: // connection error
                 std::cerr << "There was a connection issue with " << host << std::endl;
-                goto srv_disconnect;
+                goto srv_disconnect; // disconnect
                 break;
             case 0: // client disconnected
                 std::cout << host << " disconnected" << std::endl;
-                goto srv_disconnect;
+                goto srv_disconnect; // disconnect
                 break;
             default:
                 std::cout << "Recieved: " << std::string(buf, 0, bytesRecv) << std::endl;
+                // DO HTTP STUFF HERE
+                // echo the contents of the recv buffer back to the client
                 send(client, buf, bytesRecv + 1, 0);
                 break;
         }
@@ -101,3 +119,4 @@ void Server::error(const std::string& message)
     std::cerr << message << std::endl;
     std::exit(1);
 }
+

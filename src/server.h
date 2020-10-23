@@ -19,14 +19,14 @@
 
 class Server {
     private:
-        int sockfd;
-        sockaddr_in clientAddress;
+        int sockfd;                 // server socket
+        sockaddr_in clientAddress;  // client addr struct
 
         unsigned short port;
         std::string host;
 
-        void error(const std::string& message);
-        void handleConnection(int client);
+        void error(const std::string& message); // fatal errors that require an exit() call
+        void handleConnection(int client);      // handles connections
     public:
         Server(const std::string& host, const unsigned short port);
         ~Server();
