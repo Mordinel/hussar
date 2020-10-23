@@ -46,14 +46,12 @@ void Server::Listen()
         if (clientSocket < 0) {
             std::cerr << "ERROR problem with client connection" << std::endl;
         } else {
-            this->handleConnection(clientSocket, SOCKET_MAXTIME);     
+            this->handleConnection(clientSocket);
         }
     }
 }
 
-void Server::handleConnection(int client, int timeout) {
-    auto start = std::chrono::high_resolution_clock::now();
-
+void Server::handleConnection(int client) {
     char host[NI_MAXHOST];
     char svc[NI_MAXSERV];
 
@@ -79,25 +77,17 @@ void Server::handleConnection(int client, int timeout) {
         int bytesRecv = recv(client, buf, 4096, 0);
         switch (bytesRecv) {
             case -1: // connection error
-                std::cerr << "There was a connection issue" << std::endl;
+                std::cerr << "There was a connection issue with " << host << std::endl;
                 goto srv_disconnect;
                 break;
             case 0: // client disconnected
-                std::cout << "The client disconnected" << std::endl;
+                std::cout << host << " disconnected" << std::endl;
                 goto srv_disconnect;
                 break;
             default:
                 std::cout << "Recieved: " << std::string(buf, 0, bytesRecv) << std::endl;
                 send(client, buf, bytesRecv + 1, 0);
                 break;
-        }
-
-        // check if thread existed longer than the timeout
-        auto stop = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
-
-        if (duration.count() >= timeout) {
-            goto srv_disconnect;
         }
     }
 

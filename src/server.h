@@ -16,9 +16,6 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <chrono>
-
-#define SOCKET_MAXTIME 30
 
 class Server {
     private:
@@ -29,7 +26,7 @@ class Server {
         std::string host;
 
         void error(const std::string& message);
-        void handleConnection(int client, int timeout);
+        void handleConnection(int client);
     public:
         Server(const std::string& host, const unsigned short port);
         ~Server();
