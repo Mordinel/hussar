@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 
-#include "hussar.h"
+#include "server.h"
 
 int main(int argc, char* argv[])
 {
