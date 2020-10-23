@@ -79,9 +79,11 @@ void Server::conn(int client, sockaddr_in address) {
         switch (bytesRecv) {
             case -1:
                 std::cerr << "There was a connection issue" << std::endl;
+                goto srv_disconnect;
                 break;
             case 0:
                 std::cout << "The client disconnected" << std::endl;
+                goto srv_disconnect;
                 break;
             default:
                 std::cout << "Recieved: " << string(buf, 0, bytesRecv) << std::endl;
@@ -89,7 +91,7 @@ void Server::conn(int client, sockaddr_in address) {
                 break;
         }
     }
-
+srv_disconnect:
     close(client);
     this->clientSockets.erase(client);
 }
