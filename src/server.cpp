@@ -1,59 +1,58 @@
-#include "hussar.h"
+#include "server.h"
 
-Server::Server(const std::string& host, const short port)
+Server::Server(const std::string& host, const unsigned short port)
     : host(std::move(host)), port(port)
 {
-    this->sockfd = sock(AF_INET, SOCK_STREAM, 0);
+    this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (this->sockfd < 0) {
         this->error("ERROR opening socket");
     }
     
-    if (setsockopt(this->sockfs, SOL_SOCKET, SO_REUSEADDR, 1) < 0) {
-        this->error("ERROR setting socket option");
-    }
-    
     sockaddr_in hint; 
-    hint.sin_famiy = AF_INET;
+    hint.sin_family = AF_INET;
     hint.sin_port = htons(this->port);
     inet_pton(AF_INET, host.c_str(), &hint.sin_addr);
 
-    if (bind(this->sockfd, static_cast<sockaddr*>(&hint), sizeof(hint)) < 0) {
+    if (bind(this->sockfd, (sockaddr*)&hint, sizeof(hint)) < 0) {
         this->error("ERROR can't bind to ip/port");
     }
+
+    this->Listen();
 }
 
 Server::~Server()
 {
-    for (int socket : clientSockets) {
-        close(socket);
-    }
+    close(this->sockfd);
 }
 
+// listen for incoming connections and spawn threads
 void Server::Listen()
 {
     if (listen(this->sockfd, SOMAXCONN) < 0) {
         this->error("ERROR can't listen");
     }
 
-
     while (true) {
-        sockaddr_in client;
-        socklen_t clientSize = sizeof(client);
+        socklen_t clientSize = sizeof(this->clientAddress);
 
-        int clientSocket = accept(this->sockfs, static_cast<sockaddr*>(&client), &clientSize);
+        // accept connections
+        int clientSocket = accept(this->sockfd, (sockaddr*)&this->clientAddress, &clientSize);
+
+        if (fork() != 0) {
+            close(clientSocket);
+            continue;
+        }
 
         if (clientSocket < 0) {
             std::cerr << "ERROR problem with client connection" << std::endl;
         } else {
-            // set client timeout
-            // MAKE THREADS REMOVE THEMSELVES FROM THREAD DATA STRUCTURE
-            threads.push(std::make_shared<std::thread>(this->conn, clientSocket, client));
+            this->handleConnection(clientSocket, SOCKET_MAXTIME);     
         }
     }
 }
 
-void Server::conn(int client, sockaddr_in address) {
-    this->clientSockets.insert(client);
+void Server::handleConnection(int client, int timeout) {
+    auto start = std::chrono::high_resolution_clock::now();
 
     char host[NI_MAXHOST];
     char svc[NI_MAXSERV];
@@ -61,41 +60,52 @@ void Server::conn(int client, sockaddr_in address) {
     memset(host, 0, NI_MAXHOST);
     memset(svc, 0, NI_MAXSERV);
     
-    int result = getnameinfo(static_cast<sockaddr*>(&address), sizeof(address), host, NI_MAXHOST, svc, NI_MAXSERV, 0)
+    // resolve a hostname if possible
+    int result = getnameinfo((sockaddr*)&this->clientAddress, sizeof(this->clientAddress), host, NI_MAXHOST, svc, NI_MAXSERV, 0);
 
     if (result) {
         std::cout << host << " connected on " << svc << std::endl;
     } else {
-        inet_ntop(AF_INET, &address.sin_addr, host, NI_MAXHOST);
-        std::cout << host << " connected on " << ntohs(address.sin_port) << std::endl;
+        inet_ntop(AF_INET, &this->clientAddress.sin_addr, host, NI_MAXHOST);
+        std::cout << host << " connected on " << ntohs(this->clientAddress.sin_port) << std::endl;
     }
 
     char buf[4096];
 
-    for (;;) {
+    // read and handle bytes
+    while (true) {
         memset(buf, 0, 4096);
 
         int bytesRecv = recv(client, buf, 4096, 0);
         switch (bytesRecv) {
-            case -1:
+            case -1: // connection error
                 std::cerr << "There was a connection issue" << std::endl;
                 goto srv_disconnect;
                 break;
-            case 0:
+            case 0: // client disconnected
                 std::cout << "The client disconnected" << std::endl;
                 goto srv_disconnect;
                 break;
             default:
-                std::cout << "Recieved: " << string(buf, 0, bytesRecv) << std::endl;
+                std::cout << "Recieved: " << std::string(buf, 0, bytesRecv) << std::endl;
                 send(client, buf, bytesRecv + 1, 0);
                 break;
         }
+
+        // check if thread existed longer than the timeout
+        auto stop = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+
+        if (duration.count() >= timeout) {
+            goto srv_disconnect;
+        }
     }
+
 srv_disconnect:
     close(client);
-    this->clientSockets.erase(client);
 }
 
+// for fatal errors that should kill the program.
 void Server::error(const std::string& message)
 {
     std::cerr << message << std::endl;

@@ -4,34 +4,37 @@
 // c includes
 #include <cstdlib>      // exit
 #include <netdb.h>      // getnameinfo
+#include <unistd.h>     // close
 #include <string.h>     // memset
+#include <signal.h>     // sigs
 #include <arpa/inet.h>  // htons
 #include <sys/types.h>  // compatibility reasons
+#include <netinet/in.h>
 #include <sys/socket.h> // sockets
 
 // cpp includes
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <thread>
-#include <queue>
-#include <set>
+#include <chrono>
 
-#include "socket.h"
+#define SOCKET_MAXTIME 30
 
 class Server {
     private:
         int sockfd;
-        std::set<int> clientSockets;
-        std::queue<shared_ptr<std::thread>> threads;
+        sockaddr_in clientAddress;
+
+        unsigned short port;
+        std::string host;
 
         void error(const std::string& message);
-        void conn(int client, sockaddr_in address);
+        void handleConnection(int client, int timeout);
     public:
-        Server(const std::string& host, const short port);
+        Server(const std::string& host, const unsigned short port);
         ~Server();
-
         void Listen();
 };
+
 
 #endif
