@@ -3,8 +3,8 @@
 /**
  * binds a host:port socket, then calls this->Listen to listen for incoming connections
  */
-Server::Server(const std::string& host, const unsigned short port)
-    : host(std::move(host)), port(port)
+Server::Server(const std::string& host, const unsigned short port, const std::string& docRoot)
+    : host(std::move(host)), port(port), docRoot(docRoot)
 {
     this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (this->sockfd < 0) {
@@ -19,6 +19,8 @@ Server::Server(const std::string& host, const unsigned short port)
     if (bind(this->sockfd, (sockaddr*)&hint, sizeof(hint)) < 0) {
         this->error("ERROR can't bind to ip/port");
     }
+
+    pthread_spin_init(&this->spinlock, 0);
 
     this->Listen();
 }
@@ -52,7 +54,7 @@ void Server::Listen()
         if (clientSocket < 0) {
             std::cerr << "ERROR problem with client connection" << std::endl;
         } else {
-            this->handleConnection(clientSocket);
+            this->handleConnection(clientSocket, SOCKET_MAXTIME);
         }
     }
 }
@@ -60,7 +62,8 @@ void Server::Listen()
 /**
  * handles a single client connection
  */
-void Server::handleConnection(int client) {
+void Server::handleConnection(int client, int timeout) {
+    auto start = std::chrono::steady_clock::now();
     // allocate stack buffers for host and service strings
     char host[NI_MAXHOST];
     char svc[NI_MAXSERV];
@@ -91,6 +94,16 @@ void Server::handleConnection(int client) {
         // read data incoming from the client into the recv buffer
         int bytesRecv = recv(client, buf, 4096, 0);
 
+        // get time spent on this thread
+        auto stop = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+
+        // if it exceeds the limit, end the connection.
+        if (duration.count() >= timeout) {
+            std::cout << host << " timed out" << std::endl;
+            goto srv_disconnect;
+        }
+
         switch (bytesRecv) {
             case -1: // connection error
                 std::cerr << "There was a connection issue with " << host << std::endl;
@@ -101,16 +114,121 @@ void Server::handleConnection(int client) {
                 goto srv_disconnect; // disconnect
                 break;
             default:
-                std::cout << "Recieved: " << std::string(buf, 0, bytesRecv) << std::endl;
-                // DO HTTP STUFF HERE
-                // echo the contents of the recv buffer back to the client
-                send(client, buf, bytesRecv + 1, 0);
+
+                std::string bufStr(buf);
+                Request r(bufStr);
+
+                std::cout << host << " Requested " << r.Document << std::endl;
+
+                std::string* response = this->handleRequest(r, client);
+                send(client, response->c_str(), response->size(), 0);
+                delete response;
+
+                std::cout << "Ending connection to " << host << std::endl;
+                goto srv_disconnect;
                 break;
         }
+
+
     }
 
 srv_disconnect:
     close(client);
+}
+
+std::string* Server::handleRequest(Request& req, int client)
+{
+    if (req.isRequestGood) {
+        std::vector<std::string> docInfo;
+        this->serveDoc(req.Document, this->docRoot, docInfo);
+
+        std::string body = std::move(docInfo[0]);
+        std::string mime = std::move(docInfo[1]);
+        std::string http = std::move(docInfo[2]);
+
+        std::string status;
+        // add more statuses later
+        if (http == "200") {
+            status = "OK";
+        } else if (http == "404") {
+            status = "NOT FOUND";
+        }
+
+        // get local time
+        auto now = std::chrono::system_clock::now();
+        auto time = std::chrono::system_clock::to_time_t(now);
+        auto localTime = *std::localtime(&time);
+
+        // format date for http output
+        std::stringstream dateStream;
+        dateStream << std::put_time(&localTime, "%a, %d %b %Y %H:%M:%S");
+        std::string date = dateStream.str();
+
+        std::string connection = "Closed";
+
+        // build response payload to return to client
+        std::stringstream responseStream;
+        responseStream << "HTTP/1.1 " << http << " " << status << "\n";
+        responseStream << "Date: " << date << "\n";
+        responseStream << "Server: " << SERVER_NAME << "\n";
+        responseStream << "Last-Modified: " << date << "\n";
+        responseStream << "Content-Length: " << body.size() << "\n";
+        responseStream << "Content-Type: " << mime << "\n";
+        responseStream << "Connection: " << connection << "\n";
+        responseStream << "\n";
+        responseStream << body << "\n";
+
+        std::string* response = new std::string(responseStream.str());
+        return response;
+    }
+
+    // MAKE THIS RETURN A 500 ERROR
+    std::string* response = new std::string("BAD REQUEST");
+    return response;
+}
+
+/**
+ * attempts to read the document from the filesystem, 
+ */
+void Server::serveDoc(std::string& document, const std::string& docRoot, std::vector<std::string>& docInfo)
+{
+    // if a directory traversal is attempted, make the document target index.html
+    if (document.find("../") != std::string::npos) {
+        document = "/index.html";
+    } else if (document == "/") { // if directory is /, then make the document target index.html
+        document = "/index.html";
+    }
+
+    // get the absolute path of the requested document
+    std::filesystem::path p(std::filesystem::current_path());
+    p /= docRoot;
+    p += document;
+    p = std::filesystem::weakly_canonical(p);
+
+    std::cout << "Serving document: " << p << std::endl;
+
+    pthread_spin_lock(&this->spinlock); // lock resource
+
+    // docInfo[0] = file data
+    // docInfo[1] = mime type
+    // docInfo[2] = http status
+    if (std::filesystem::exists(p)) {
+        // file exists, load it into docInfo
+        std::ifstream file(p);
+        docInfo.push_back(
+                std::string(
+                    (std::istreambuf_iterator<char>(file)),
+                     std::istreambuf_iterator<char>()));
+        docInfo.push_back("text/html"); // mime type is always text/html for now
+        docInfo.push_back("200");
+    } else {
+        // file doesn't exist, throw a 404 and a default body
+        docInfo.push_back("<h1>404: File Not found!</h1>");
+        docInfo.push_back("text/html");
+        docInfo.push_back("404");
+    }
+
+    pthread_spin_unlock(&this->spinlock); // unlock resource
 }
 
 // for fatal errors that should kill the program.
