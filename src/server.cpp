@@ -172,7 +172,7 @@ std::string* Server::handleRequest(Request& req, int client)
         responseStream << "Date: " << date << "\n";
         responseStream << "Server: " << SERVER_NAME << "\n";
         responseStream << "Last-Modified: " << date << "\n";
-        responseStream << "Content-Length: " << body.size() << "\n";
+        responseStream << "Content-Length: " << body.size() + 1 << "\n";
         responseStream << "Content-Type: " << mime << "\n";
         responseStream << "Connection: " << connection << "\n";
         responseStream << "\n";
