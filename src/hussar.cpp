@@ -1,9 +1,9 @@
-#include "server.h"
+#include "hussar.h"
 
 /**
  * binds a host:port socket, then calls this->Listen to listen for incoming connections
  */
-Server::Server(const std::string& host, const unsigned short port, const std::string& docRoot)
+Hussar::Hussar(const std::string& host, const unsigned short port, const std::string& docRoot)
     : host(std::move(host)), port(port), docRoot(docRoot)
 {
     this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -24,7 +24,7 @@ Server::Server(const std::string& host, const unsigned short port, const std::st
 }
 
 // closes the server socket
-Server::~Server()
+Hussar::~Hussar()
 {
     close(this->sockfd);
 }
@@ -32,7 +32,7 @@ Server::~Server()
 /**
  * listen for incoming connections and spawn threads for each connection
  */
-void Server::Listen()
+void Hussar::Listen()
 {
     if (listen(this->sockfd, SOMAXCONN) < 0) {
         this->error("ERROR can't listen");
@@ -47,7 +47,7 @@ void Server::Listen()
         if (clientSocket < 0) {
             std::cerr << "ERROR problem with client connection" << std::endl;
         } else {
-            std::jthread conn(&Server::handleConnection, this, clientSocket, SOCKET_MAXTIME);
+            std::jthread conn(&Hussar::handleConnection, this, clientSocket, SOCKET_MAXTIME);
         }
     }
 }
@@ -55,7 +55,7 @@ void Server::Listen()
 /**
  * handles a single client connection
  */
-void Server::handleConnection(int client, int timeout) {
+void Hussar::handleConnection(int client, int timeout) {
     auto start = std::chrono::steady_clock::now();
     // allocate stack buffers for host and service strings
     char host[NI_MAXHOST];
@@ -127,7 +127,7 @@ srv_disconnect:
     close(client);
 }
 
-std::string* Server::handleRequest(Request& req, int client)
+std::string* Hussar::handleRequest(Request& req, int client)
 {
     if (req.isRequestGood) {
         std::vector<std::string> docInfo;
@@ -181,7 +181,7 @@ std::string* Server::handleRequest(Request& req, int client)
 /**
  * attempts to read the document from the filesystem, 
  */
-void Server::serveDoc(std::string& document, const std::string& docRoot, std::vector<std::string>& docInfo)
+void Hussar::serveDoc(std::string& document, const std::string& docRoot, std::vector<std::string>& docInfo)
 {
     // if a directory traversal is attempted, make the document target index.html
     if (document.find("../") != std::string::npos) {
@@ -226,7 +226,7 @@ void Server::serveDoc(std::string& document, const std::string& docRoot, std::ve
 /**
  * returns a string containing the mime time of the extension of the document string.
  */
-std::string* Server::getMime(std::string& document) {
+std::string* Hussar::getMime(std::string& document) {
     std::size_t l = document.find_last_of('.');
 
     // if no char found
@@ -248,7 +248,7 @@ std::string* Server::getMime(std::string& document) {
 }
 
 // for fatal errors that should kill the program.
-void Server::error(const std::string& message)
+void Hussar::error(const std::string& message)
 {
     std::cerr << message << std::endl;
     std::exit(1);

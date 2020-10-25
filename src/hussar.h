@@ -1,5 +1,5 @@
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef HUSSAR_H
+#define HUSSAR_H
 
 // c includes
 #include <cstdlib>      // exit
@@ -27,9 +27,9 @@
 #define SERVER_NAME "HussarHTTP"
 #define SOCKET_MAXTIME 30
 
-class Server {
+class Hussar {
     private:
-        int sockfd;                     // server socket
+        int sockfd;                     // Server socket
         sockaddr_in clientAddress;      // client addr struct
 
         std::string host;
@@ -59,8 +59,8 @@ class Server {
         void serveDoc(std::string& document, const std::string& docRoot, std::vector<std::string>& docInfo);
         std::string* getMime(std::string& document);
     public:
-        Server(const std::string& host, const unsigned short port, const std::string& docRoot);
-        ~Server();
+        Hussar(const std::string& host, const unsigned short port, const std::string& docRoot);
+        ~Hussar();
         void Listen();
 };
 
