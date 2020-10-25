@@ -47,11 +47,7 @@ void Server::Listen()
         if (clientSocket < 0) {
             std::cerr << "ERROR problem with client connection" << std::endl;
         } else {
-            //this->handleConnection(clientSocket, SOCKET_MAXTIME);
             std::jthread conn(&Server::handleConnection, this, clientSocket, SOCKET_MAXTIME);
-            auto conn_pair =
-                std::make_pair<std::thread::id, std::jthread>(conn.get_id(), std::move(conn));
-            this->threads.insert(std::move(conn_pair));
         }
     }
 }
@@ -129,8 +125,6 @@ void Server::handleConnection(int client, int timeout) {
 
 srv_disconnect:
     close(client);
-    // set thread to remove itself from scope
-    std::jthread eraser(&Server::eraseThread, this, std::this_thread::get_id());
 }
 
 std::string* Server::handleRequest(Request& req, int client)
@@ -227,15 +221,6 @@ void Server::serveDoc(std::string& document, const std::string& docRoot, std::ve
         docInfo.push_back("text/html");
         docInfo.push_back("404");
     }
-}
-
-/**
- * Thread spawned from a connection thread to delete itself from the unordered_map
- * of threads that keeps it in scope (keeps jthread from exiting)
- */
-void Server::eraseThread(std::thread::id tid)
-{
-    this->threads.erase(tid);
 }
 
 /**

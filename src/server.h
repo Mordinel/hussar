@@ -36,7 +36,6 @@ class Server {
         unsigned short port;
         std::string docRoot;
         std::mutex fileMutex;
-        std::unordered_map<std::thread::id, std::jthread> threads;
         std::unordered_map<std::string, std::string> mimes = 
         {
             {"woff", "font/woff"},
@@ -58,7 +57,6 @@ class Server {
         void handleConnection(int client, int timeout); // handles connections
         std::string* handleRequest(Request& req, int client);    // handles requests
         void serveDoc(std::string& document, const std::string& docRoot, std::vector<std::string>& docInfo);
-        void eraseThread(std::thread::id tid);
         std::string* getMime(std::string& document);
     public:
         Server(const std::string& host, const unsigned short port, const std::string& docRoot);
