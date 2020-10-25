@@ -20,8 +20,6 @@ Server::Server(const std::string& host, const unsigned short port, const std::st
         this->error("ERROR can't bind to ip/port");
     }
 
-    pthread_spin_init(&this->spinlock, 0);
-
     this->Listen();
 }
 
@@ -46,15 +44,14 @@ void Server::Listen()
         // accept connections
         int clientSocket = accept(this->sockfd, (sockaddr*)&this->clientAddress, &clientSize);
 
-        if (fork() != 0) {
-            close(clientSocket);
-            continue;
-        }
-
         if (clientSocket < 0) {
             std::cerr << "ERROR problem with client connection" << std::endl;
         } else {
-            this->handleConnection(clientSocket, SOCKET_MAXTIME);
+            //this->handleConnection(clientSocket, SOCKET_MAXTIME);
+            std::jthread conn(&Server::handleConnection, this, clientSocket, SOCKET_MAXTIME);
+            auto conn_pair =
+                std::make_pair<std::thread::id, std::jthread>(conn.get_id(), std::move(conn));
+            this->threads.insert(std::move(conn_pair));
         }
     }
 }
@@ -128,12 +125,16 @@ void Server::handleConnection(int client, int timeout) {
                 goto srv_disconnect;
                 break;
         }
-
-
     }
 
 srv_disconnect:
     close(client);
+    std::jthread eraser(&Server::eraseThread, this, std::this_thread::get_id());
+}
+
+void Server::eraseThread(std::thread::id tid)
+{
+    this->threads.erase(tid);
 }
 
 std::string* Server::handleRequest(Request& req, int client)
@@ -207,7 +208,7 @@ void Server::serveDoc(std::string& document, const std::string& docRoot, std::ve
 
     std::cout << "Serving document: " << p << std::endl;
 
-    pthread_spin_lock(&this->spinlock); // lock resource
+    std::lock_guard<std::mutex> lock(this->fileMutex);
 
     // docInfo[0] = file data
     // docInfo[1] = mime type
@@ -227,8 +228,6 @@ void Server::serveDoc(std::string& document, const std::string& docRoot, std::ve
         docInfo.push_back("text/html");
         docInfo.push_back("404");
     }
-
-    pthread_spin_unlock(&this->spinlock); // unlock resource
 }
 
 // for fatal errors that should kill the program.
