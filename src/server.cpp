@@ -129,12 +129,8 @@ void Server::handleConnection(int client, int timeout) {
 
 srv_disconnect:
     close(client);
+    // set thread to remove itself from scope
     std::jthread eraser(&Server::eraseThread, this, std::this_thread::get_id());
-}
-
-void Server::eraseThread(std::thread::id tid)
-{
-    this->threads.erase(tid);
 }
 
 std::string* Server::handleRequest(Request& req, int client)
@@ -220,7 +216,10 @@ void Server::serveDoc(std::string& document, const std::string& docRoot, std::ve
                 std::string(
                     (std::istreambuf_iterator<char>(file)),
                      std::istreambuf_iterator<char>()));
-        docInfo.push_back("text/html"); // mime type is always text/html for now
+
+        std::string* mime = this->getMime(document);
+
+        docInfo.push_back(*mime);
         docInfo.push_back("200");
     } else {
         // file doesn't exist, throw a 404 and a default body
@@ -228,6 +227,39 @@ void Server::serveDoc(std::string& document, const std::string& docRoot, std::ve
         docInfo.push_back("text/html");
         docInfo.push_back("404");
     }
+}
+
+/**
+ * Thread spawned from a connection thread to delete itself from the unordered_map
+ * of threads that keeps it in scope (keeps jthread from exiting)
+ */
+void Server::eraseThread(std::thread::id tid)
+{
+    this->threads.erase(tid);
+}
+
+/**
+ * returns a string containing the mime time of the extension of the document string.
+ */
+std::string* Server::getMime(std::string& document) {
+    std::size_t l = document.find_last_of('.');
+
+    // if no char found
+    if (l == std::string::npos) {
+        return &this->mimes.begin()->second; // default to 1st item (text file)
+    }
+
+    // create a string view of the extension
+    std::string_view extension(document.begin() + l + 1, document.end());
+
+    // find extension in this->mimes
+    auto mimeIter = this->mimes.find(std::string(extension));
+
+    if (mimeIter == this->mimes.end()) {
+        return &this->mimes.begin()->second;
+    }
+
+    return &mimeIter->second;
 }
 
 // for fatal errors that should kill the program.

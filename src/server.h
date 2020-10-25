@@ -17,6 +17,7 @@
 #include <filesystem>       // file reading
 #include <iostream>
 #include <fstream>          // file streams
+#include <atomic>           // for thread map
 #include <string>           // strings and stringstreams
 #include <thread>           // threading
 #include <mutex>            // thread resource locking
@@ -36,12 +37,29 @@ class Server {
         std::string docRoot;
         std::mutex fileMutex;
         std::unordered_map<std::thread::id, std::jthread> threads;
+        std::unordered_map<std::string, std::string> mimes = 
+        {
+            {"woff", "font/woff"},
+            {"woff2", "font/woff2"},
+            {"js", "application/javascript"},
+            {"ttf", "application/octet-stream"},
+            {"otf", "application/octet-stream"},
+            {"pdf", "application/pdf"},
+            {"zip", "application/zip"},
+            {"gif", "image/gif"},
+            {"png", "image/png"},
+            {"jpg", "image/jpeg"},
+            {"css", "text/css"},
+            {"html", "text/html"},
+            {"txt", "text/plain"}
+        };
 
         void error(const std::string& message);         // fatal errors that require an exit() call
         void handleConnection(int client, int timeout); // handles connections
         std::string* handleRequest(Request& req, int client);    // handles requests
         void serveDoc(std::string& document, const std::string& docRoot, std::vector<std::string>& docInfo);
         void eraseThread(std::thread::id tid);
+        std::string* getMime(std::string& document);
     public:
         Server(const std::string& host, const unsigned short port, const std::string& docRoot);
         ~Server();
