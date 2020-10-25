@@ -5,7 +5,7 @@ OUTFILE=hussarHTTP
 .PHONY: clean
 
 all: ${SOURCES}
-	clang++ ${SOURCES} ${CFLAGS} -o ${OUTFILE}
+	g++-10 ${SOURCES} ${CFLAGS} -o ${OUTFILE}
 
 run: ${OUTFILE}
 	./${OUTFILE}
