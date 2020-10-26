@@ -65,15 +65,9 @@ void Hussar::handleConnection(int client, int timeout) {
     memset(host, 0, NI_MAXHOST);
     memset(svc, 0, NI_MAXSERV);
     
-    // resolve a hostname if possible
-    int result = getnameinfo((sockaddr*)&this->clientAddress, sizeof(this->clientAddress), host, NI_MAXHOST, svc, NI_MAXSERV, 0);
-
-    // if hostname resolved, print it, else print the IP
-    if (result) {
-        std::cout << host << " connected on " << svc << std::endl;
-    } else {
+    // if hostname didn't resolve, use the ip instead
+    if (getnameinfo((sockaddr*)&this->clientAddress, sizeof(this->clientAddress), host, NI_MAXHOST, svc, NI_MAXSERV, 0)) {
         inet_ntop(AF_INET, &this->clientAddress.sin_addr, host, NI_MAXHOST);
-        std::cout << host << " connected on " << ntohs(this->clientAddress.sin_port) << std::endl;
     }
 
     // allocate a stack buffer for recieved data
@@ -86,16 +80,6 @@ void Hussar::handleConnection(int client, int timeout) {
 
         // read data incoming from the client into the recv buffer
         int bytesRecv = recv(client, buf, 4096, 0);
-
-        // get time spent on this thread
-        auto stop = std::chrono::steady_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
-
-        // if it exceeds the limit, end the connection.
-        if (duration.count() >= timeout) {
-            std::cout << host << " timed out" << std::endl;
-            goto srv_disconnect;
-        }
 
         switch (bytesRecv) {
             case -1: // connection error
@@ -117,7 +101,6 @@ void Hussar::handleConnection(int client, int timeout) {
                 send(client, response->c_str(), response->size(), 0);
                 delete response;
 
-                std::cout << "Ending connection to " << host << std::endl;
                 goto srv_disconnect;
                 break;
         }
@@ -213,10 +196,26 @@ void Hussar::serveDoc(std::string& document, const std::string& docRoot, std::ve
         docInfo.push_back(*mime);
         docInfo.push_back("200");
     } else {
-        // file doesn't exist, throw a 404 and a default body
-        docInfo.push_back("<h1>404: File Not found!</h1>");
-        docInfo.push_back("text/html");
-        docInfo.push_back("404");
+        // try a custom 404 page
+        p = std::filesystem::current_path();
+        p /= docRoot;
+        p += "/404.html";
+        p = std::filesystem::weakly_canonical(p);
+
+        // if it exists, use it for the 404 page else use the default page
+        if (std::filesystem::exists(p)) {
+            std::ifstream file(p);
+            docInfo.push_back(
+                    std::string(
+                        (std::istreambuf_iterator<char>(file)),
+                         std::istreambuf_iterator<char>()));
+            docInfo.push_back("text/html");
+            docInfo.push_back("404");
+        } else {
+            docInfo.push_back("<h1>404: File Not found!</h1>");
+            docInfo.push_back("text/html");
+            docInfo.push_back("404");
+        }
     }
 }
 
