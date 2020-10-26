@@ -197,8 +197,6 @@ void Hussar::serveDoc(std::string& document, const std::string& docRoot, std::ve
 
     std::cout << "Serving document: " << p << std::endl;
 
-    std::lock_guard<std::mutex> lock(this->fileMutex);
-
     // docInfo[0] = file data
     // docInfo[1] = mime type
     // docInfo[2] = http status

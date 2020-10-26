@@ -20,7 +20,6 @@
 #include <atomic>           // for thread map
 #include <string>           // strings and stringstreams
 #include <thread>           // threading
-#include <mutex>            // thread resource locking
 
 #include "request.h"
 
@@ -35,7 +34,6 @@ class Hussar {
         std::string host;
         unsigned short port;
         std::string docRoot;
-        std::mutex fileMutex;
         std::unordered_map<std::string, std::string> mimes = 
         {
             {"woff", "font/woff"},
