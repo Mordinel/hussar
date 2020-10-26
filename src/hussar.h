@@ -17,7 +17,6 @@
 #include <filesystem>       // file reading
 #include <iostream>
 #include <fstream>          // file streams
-#include <atomic>           // for thread map
 #include <string>           // strings and stringstreams
 #include <thread>           // threading
 
