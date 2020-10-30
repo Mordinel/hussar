@@ -10,7 +10,10 @@ Hussar::Hussar(const std::string& host, const unsigned short port, const std::st
     if (this->sockfd < 0) {
         this->error("ERROR opening socket");
     }
-    
+
+    int reuseAddrOpt = 1;
+    setsockopt(this->sockfd, SOL_SOCKET, SO_REUSEADDR, &reuseAddrOpt, sizeof(reuseAddrOpt));
+
     sockaddr_in hint; 
     hint.sin_family = AF_INET;
     hint.sin_port = htons(this->port);
