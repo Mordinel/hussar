@@ -19,6 +19,7 @@
 #include <fstream>          // file streams
 #include <string>           // strings and stringstreams
 #include <thread>           // threading
+#include <regex>            // path stuff
 
 #include "request.h"
 
