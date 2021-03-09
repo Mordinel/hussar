@@ -2,11 +2,11 @@ CC    	=	clang++
 CFLAGS	=	-std=c++20 -g -pthread
 
 SOURCES	=	src/*.cpp
-OUTFILE	=	hussarHTTP
+OUTFILE	=	hussar
 
-.PHONY: clean
+.PHONY: run clean
 
-all: $(SOURCES)
+hussar: $(SOURCES)
 	$(CC) $(SOURCES) $(CFLAGS) -o $(OUTFILE)
 
 run: $(OUTFILE)
