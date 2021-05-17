@@ -41,6 +41,7 @@ class Hussar {
             {"js", "application/javascript"},
             {"ttf", "application/octet-stream"},
             {"otf", "application/octet-stream"},
+            {"exe", "application/octet-stream"},
             {"pdf", "application/pdf"},
             {"zip", "application/zip"},
             {"gif", "image/gif"},
