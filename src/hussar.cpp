@@ -148,11 +148,11 @@ std::string* Hussar::handleRequest(Request& req, int client)
         responseStream << "HTTP/1.1 " << http << " " << status << "\n";
         responseStream << "Date: " << date << "\n";
         responseStream << "Server: " << SERVER_NAME << "\n";
-        responseStream << "Content-Length: " << body.size() + 1 << "\n";
+        responseStream << "Content-Length: " << body.size() << "\n";
         responseStream << "Content-Type: " << mime << "\n";
         responseStream << "Connection: " << connection << "\n";
         responseStream << "\n";
-        responseStream << body << "\n";
+        responseStream << body;
 
         std::string* response = new std::string(responseStream.str());
         return response;
