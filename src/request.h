@@ -2,12 +2,14 @@
 #define REQUEST_H
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
 class Request {
     private:
 
+        void parseURL(std::string& document);
         void splitString(const std::string& str, char c, std::vector<std::string>& strVec);
     public:
         bool isRequestGood;

@@ -169,7 +169,9 @@ std::string* Hussar::handleRequest(Request& req, int client)
 void Hussar::serveDoc(std::string& document, const std::string& docRoot, std::vector<std::string>& docInfo)
 {
     std::regex slashes("/+");
+    std::regex dots("[.][.]+");
     document = std::regex_replace(document, slashes, "/"); // collapse slashes into a single slash
+    document = std::regex_replace(document, dots, ""); // collapse 2 or more dots into nothing
 
     // if a directory traversal is attempted, make the document target index.html
     if (document.find("../") != std::string::npos) {

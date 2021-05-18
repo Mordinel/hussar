@@ -30,6 +30,7 @@ Request::Request(const std::string& request)
     this->Document = requestLine[1];
     this->Version = requestLine[2];
     this->Body = reqVec[reqVec.size() - 1]; // the last line of the request
+    this->parseURL(this->Document);
 
     // everything except for the last 3 lines and the 1st line
     for (i = 1; i < reqVec.size() - 3; ++i) {
@@ -54,3 +55,23 @@ void Request::splitString(const std::string& str, char c, std::vector<std::strin
         }
     }
 }
+
+/**
+ * parses % url codes into their char form
+ */
+void Request::parseURL(std::string& document)
+{
+    std::ostringstream oss;
+    for (size_t i = 0; i < document.size(); ++i) {
+        if (document[i] == '%') {
+            i++;
+            std::string code(document.substr(i, 2));
+            oss << static_cast<char>(std::strtol(code.c_str(), NULL, 16));
+            i++;
+        } else {
+            oss << document[i];
+        }
+    }
+    document = oss.str();
+}
+
