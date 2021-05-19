@@ -27,7 +27,7 @@ Request::Request(const std::string& request)
     }
 
     this->Method = requestLine[0];
-    this->Document = requestLine[1];
+    this->Document = this->DocumentOriginal = requestLine[1];
     this->Version = requestLine[2];
     this->Body = reqVec[reqVec.size() - 1]; // the last line of the request
     this->parseURL(this->Document);

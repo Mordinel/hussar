@@ -20,8 +20,10 @@
 #include <string>           // strings and stringstreams
 #include <thread>           // threading
 #include <regex>            // path stuff
+#include <mutex>
 
 #include "request.h"
+#include "thread_pool.h"
 
 #define SERVER_NAME "HussarHTTP"
 #define SOCKET_MAXTIME 30
@@ -51,10 +53,13 @@ class Hussar {
             {"html", "text/html"},
             {"txt", "text/plain"}
         };
+        ThreadPool threadpool;
+        std::mutex printMut;
+        std::unique_lock<std::mutex> printLock;
 
         void error(const std::string& message);         // fatal errors that require an exit() call
         void handleConnection(int client, int timeout); // handles connections
-        std::string* handleRequest(Request& req, int client);    // handles requests
+        std::string* handleRequest(Request& req, int client, char* host);    // handles requests
         void serveDoc(std::string& document, const std::string& docRoot, std::vector<std::string>& docInfo);
         std::string* getMime(std::string& document);
     public:

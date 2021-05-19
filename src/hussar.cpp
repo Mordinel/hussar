@@ -4,8 +4,9 @@
  * binds a host:port socket, then calls this->Listen to listen for incoming connections
  */
 Hussar::Hussar(const std::string& host, const unsigned short port, const std::string& docRoot)
-    : host(std::move(host)), port(port), docRoot(docRoot)
+    : host(std::move(host)), port(port), docRoot(docRoot), printLock(this->printMut)
 {
+    this->printLock.unlock();
     this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (this->sockfd < 0) {
         this->error("ERROR opening socket");
@@ -48,9 +49,11 @@ void Hussar::Listen()
         int clientSocket = accept(this->sockfd, (sockaddr*)&this->clientAddress, &clientSize);
 
         if (clientSocket < 0) {
-            std::cerr << "ERROR problem with client connection" << std::endl;
+            this->printLock.lock();
+                std::cerr << "ERROR problem with client connection" << std::endl;
+            this->printLock.unlock();
         } else {
-            std::jthread conn(&Hussar::handleConnection, this, clientSocket, SOCKET_MAXTIME);
+            this->threadpool.Dispatch(&Hussar::handleConnection, this, clientSocket, SOCKET_MAXTIME);
         }
     }
 }
@@ -68,10 +71,7 @@ void Hussar::handleConnection(int client, int timeout) {
     memset(host, 0, NI_MAXHOST);
     memset(svc, 0, NI_MAXSERV);
     
-    // if hostname didn't resolve, use the ip instead
-    if (getnameinfo((sockaddr*)&this->clientAddress, sizeof(this->clientAddress), host, NI_MAXHOST, svc, NI_MAXSERV, 0)) {
-        inet_ntop(AF_INET, &this->clientAddress.sin_addr, host, NI_MAXHOST);
-    }
+    inet_ntop(AF_INET, &this->clientAddress.sin_addr, host, NI_MAXHOST);
 
     // allocate a stack buffer for recieved data
     char buf[4096];
@@ -86,11 +86,15 @@ void Hussar::handleConnection(int client, int timeout) {
 
         switch (bytesRecv) {
             case -1: // connection error
-                std::cerr << "There was a connection issue with " << host << std::endl;
+                this->printLock.lock();
+                    std::cerr << "There was a connection issue with " << host << std::endl;
+                this->printLock.unlock();
                 goto srv_disconnect; // disconnect
                 break;
             case 0: // client disconnected
-                std::cout << host << " disconnected" << std::endl;
+                this->printLock.lock();
+                    std::cout << host << " disconnected" << std::endl;
+                this->printLock.unlock();
                 goto srv_disconnect; // disconnect
                 break;
             default:
@@ -98,9 +102,7 @@ void Hussar::handleConnection(int client, int timeout) {
                 std::string bufStr(buf);
                 Request r(bufStr);
 
-                std::cout << host << " Requested " << r.Document << std::endl;
-
-                std::string* response = this->handleRequest(r, client);
+                std::string* response = this->handleRequest(r, client, host);
                 send(client, response->c_str(), response->size(), 0);
                 delete response;
 
@@ -113,7 +115,7 @@ srv_disconnect:
     close(client);
 }
 
-std::string* Hussar::handleRequest(Request& req, int client)
+std::string* Hussar::handleRequest(Request& req, int client, char* host)
 {
     if (req.isRequestGood) {
         std::vector<std::string> docInfo;
@@ -122,6 +124,7 @@ std::string* Hussar::handleRequest(Request& req, int client)
         std::string body = std::move(docInfo[0]);
         std::string mime = std::move(docInfo[1]);
         std::string http = std::move(docInfo[2]);
+
 
         std::string status;
         // add more statuses later
@@ -140,6 +143,10 @@ std::string* Hussar::handleRequest(Request& req, int client)
         std::stringstream dateStream;
         dateStream << std::put_time(&localTime, "%a, %d %b %Y %H:%M:%S");
         std::string date = dateStream.str();
+
+//        this->printLock.lock();
+//            std::cout << date << "\t" << host << "\t" << http << "\t" << req.DocumentOriginal << "\n";
+//        this->printLock.unlock();
 
         std::string connection = "Closed";
 
@@ -185,8 +192,6 @@ void Hussar::serveDoc(std::string& document, const std::string& docRoot, std::ve
     p /= docRoot;
     p += document;
     p = std::filesystem::weakly_canonical(p);
-
-    std::cout << "Serving document: " << p << std::endl;
 
     // docInfo[0] = file data
     // docInfo[1] = mime type
@@ -254,7 +259,9 @@ std::string* Hussar::getMime(std::string& document) {
 // for fatal errors that should kill the program.
 void Hussar::error(const std::string& message)
 {
-    std::cerr << message << std::endl;
+    this->printLock.lock();
+        std::cerr << message << std::endl;
+    this->printLock.unlock();
     std::exit(1);
 }
 

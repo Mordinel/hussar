@@ -15,6 +15,7 @@ class Request {
         bool isRequestGood;
         std::string Method;
         std::string Document;
+        std::string DocumentOriginal;
         std::string Version;
         std::vector<std::string> Headers;
         std::string Body;
