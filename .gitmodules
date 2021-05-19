@@ -1,0 +1,3 @@
+[submodule "include/thread_pool"]
+	path = include/thread_pool
+	url = https://github.com/SOROM2/thread-pool.git

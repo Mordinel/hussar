@@ -1,5 +1,5 @@
 CC    	= clang++
-CFLAGS	= -std=c++20 -pthread -O3
+CFLAGS	= -std=c++20 -pthread -O3 -I ./include/
 
 SOURCES	= src/*.cpp
 HEADERS = src/*.h
