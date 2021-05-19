@@ -53,9 +53,9 @@ class Hussar {
             {"html", "text/html"},
             {"txt", "text/plain"}
         };
-        ThreadPool threadpool;
         std::mutex printMut;
         std::unique_lock<std::mutex> printLock;
+        ThreadPool threadpool;
 
         void error(const std::string& message);         // fatal errors that require an exit() call
         void handleConnection(int client, int timeout); // handles connections
@@ -63,7 +63,7 @@ class Hussar {
         void serveDoc(std::string& document, const std::string& docRoot, std::vector<std::string>& docInfo);
         std::string* getMime(std::string& document);
     public:
-        Hussar(const std::string& host, const unsigned short port, const std::string& docRoot);
+        Hussar(const std::string& host, const unsigned short port, const std::string& docRoot, unsigned int threadcount);
         ~Hussar();
         void Listen();
 };

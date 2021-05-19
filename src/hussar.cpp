@@ -3,8 +3,8 @@
 /**
  * binds a host:port socket, then calls this->Listen to listen for incoming connections
  */
-Hussar::Hussar(const std::string& host, const unsigned short port, const std::string& docRoot)
-    : host(std::move(host)), port(port), docRoot(docRoot), printLock(this->printMut)
+Hussar::Hussar(const std::string& host, const unsigned short port, const std::string& docRoot, unsigned int threadcount)
+    : host(std::move(host)), port(port), docRoot(docRoot), printLock(this->printMut), threadpool(threadcount)
 {
     this->printLock.unlock();
     this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -23,8 +23,6 @@ Hussar::Hussar(const std::string& host, const unsigned short port, const std::st
     if (bind(this->sockfd, (sockaddr*)&hint, sizeof(hint)) < 0) {
         this->error("ERROR can't bind to ip/port");
     }
-
-    this->Listen();
 }
 
 // closes the server socket
