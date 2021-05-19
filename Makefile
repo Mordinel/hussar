@@ -1,17 +1,18 @@
-CC    	=	clang++
-CFLAGS	=	-std=c++20 -g -pthread
+CC    	= clang++
+CFLAGS	= -std=c++20 -pthread -O3
 
-SOURCES	=	src/*.cpp
-OUTFILE	=	hussar
+SOURCES	= src/*.cpp
+HEADERS = src/*.h
+EXE     = hussar
 
 .PHONY: run clean
 
-hussar: $(SOURCES)
-	$(CC) $(SOURCES) $(CFLAGS) -o $(OUTFILE)
+$(EXE): $(SOURCES) $(HEADERS)
+	$(CC) $(SOURCES) $(CFLAGS) -o $(EXE)
 
-run: $(OUTFILE)
-	./$(OUTFILE)
+run: $(EXE)
+	./$(EXE)
 
 clean:
-	rm -f $(OUTFILE)
+	rm -f $(EXE)
 
