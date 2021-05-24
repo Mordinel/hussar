@@ -3,10 +3,15 @@
 /**
  * binds a host:port socket, then calls this->Listen to listen for incoming connections
  */
-Hussar::Hussar(const std::string& host, const unsigned short port, const std::string& docRoot, unsigned int threadcount)
-    : host(std::move(host)), port(port), docRoot(docRoot), printLock(this->printMut), threadpool(threadcount)
+Hussar::Hussar(const std::string& host, const unsigned short port, const std::string& docRoot, unsigned int threadcount, bool verbose)
+    : host(std::move(host)), port(port), docRoot(docRoot), printLock(this->printMut), threadpool(threadcount), verbose(verbose)
 {
     this->printLock.unlock();
+
+    if (this->verbose) {
+        std::cout << "Binding socket " << host << ":" << port << "\n";
+    }
+
     this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (this->sockfd < 0) {
         this->error("ERROR opening socket");
@@ -142,9 +147,11 @@ std::string* Hussar::handleRequest(Request& req, int client, char* host)
         dateStream << std::put_time(&localTime, "%a, %d %b %Y %H:%M:%S");
         std::string date = dateStream.str();
 
-//        this->printLock.lock();
-//            std::cout << date << "\t" << host << "\t" << http << "\t" << req.DocumentOriginal << "\n";
-//        this->printLock.unlock();
+        if (this->verbose) {
+            this->printLock.lock();
+                std::cout << date << "\t" << host << "\t" << http << "\t" << req.DocumentOriginal << "\n";
+            this->printLock.unlock();
+        }
 
         std::string connection = "Closed";
 

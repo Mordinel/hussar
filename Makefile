@@ -11,7 +11,7 @@ $(EXE): $(SOURCES) $(HEADERS)
 	$(CC) $(SOURCES) $(CFLAGS) -o $(EXE)
 
 run: $(EXE)
-	./$(EXE)
+	./$(EXE) -d docroot -v
 
 clean:
 	rm -f $(EXE)
