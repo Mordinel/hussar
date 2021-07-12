@@ -6,7 +6,6 @@
 Request::Request(const std::string& request)
     : isRequestGood(true)
 {
-    int i;
     // split into lines
     std::vector<std::string> reqVec;
     this->splitString(request, '\n', reqVec);
@@ -25,6 +24,28 @@ Request::Request(const std::string& request)
         isRequestGood = false;
         return;
     }
+    
+    std::ostringstream oss;
+    std::vector<std::string> splitLine;
+    for (std::string& line : reqVec) {
+        oss.clear();
+        splitLine.clear();
+
+        if (line.rfind("User-Agent:", 0) != std::string::npos) {
+            this->splitString(line, ' ', splitLine);
+            oss << splitLine[1];
+            for (size_t n = 2; n < splitLine.size(); ++n) {
+                oss << " " << splitLine[n];
+            }
+            this->UserAgent = oss.str();
+        } else if (line.rfind("Host:", 0) != std::string::npos) {
+            this->splitString(line, ' ', splitLine);
+            if (splitLine.size() > 1) {
+                this->Host = splitLine[1];
+            }
+        }
+
+    }
 
     this->Method = requestLine[0];
     this->Document = this->DocumentOriginal = requestLine[1];
@@ -33,7 +54,7 @@ Request::Request(const std::string& request)
     this->parseURL(this->Document);
 
     // everything except for the last 3 lines and the 1st line
-    for (i = 1; i < reqVec.size() - 3; ++i) {
+    for (size_t i = 1; i < reqVec.size() - 3; ++i) {
         this->Headers.push_back(std::move(reqVec[i]));
     }
 }

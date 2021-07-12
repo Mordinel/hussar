@@ -149,7 +149,11 @@ std::string* Hussar::handleRequest(Request& req, int client, char* host)
 
         if (this->verbose) {
             this->printLock.lock();
-                std::cout << date << "\t" << host << "\t" << http << "\t" << req.DocumentOriginal << "\n";
+            if (req.UserAgent.size()) {
+                std::cout << date << "\t" << host << "\t" << req.Method << "\t" << http << "\t" << req.DocumentOriginal << "\t" << req.UserAgent << "\n";
+            } else {
+                std::cout << date << "\t" << host << "\t" << req.Method << "\t" << http << "\t" << req.DocumentOriginal << "\n";
+            }
             this->printLock.unlock();
         }
 

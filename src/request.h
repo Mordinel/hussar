@@ -18,6 +18,8 @@ class Request {
         std::string DocumentOriginal;
         std::string Version;
         std::vector<std::string> Headers;
+        std::string UserAgent;
+        std::string Host;
         std::string Body;
 
         Request(const std::string& request);
