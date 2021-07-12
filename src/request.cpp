@@ -78,7 +78,7 @@ void Request::splitString(const std::string& str, char c, std::vector<std::strin
 }
 
 /**
- * parses % url codes into their char form
+ * parses url encoded strings into their standard form
  */
 void Request::parseURL(std::string& document)
 {
@@ -89,6 +89,8 @@ void Request::parseURL(std::string& document)
             std::string code(document.substr(i, 2));
             oss << static_cast<char>(std::strtol(code.c_str(), NULL, 16));
             i++;
+        } else if (document[i] == '+') {
+            oss << ' ';
         } else {
             oss << document[i];
         }
