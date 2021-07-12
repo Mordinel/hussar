@@ -10,7 +10,7 @@ Request::Request(const std::string& request)
     std::vector<std::string> reqVec;
     this->splitString(request, '\n', reqVec);
 
-    if (reqVec.size() < 3) {
+    if (reqVec.size() < 1) {
         isRequestGood = false;
         return;
     }
@@ -48,15 +48,20 @@ Request::Request(const std::string& request)
     }
 
     this->Method = requestLine[0];
-    this->Document = this->DocumentOriginal = this->extractDocument(requestLine[1]);
+    this->DocumentOriginal = requestLine[1];
+    this->Document = this->extractDocument(this->DocumentOriginal);
     this->Version = requestLine[2];
-    this->Body = reqVec[reqVec.size() - 1]; // the last line of the request
     this->Document = this->decodeURL(this->Document);
     this->GetParameters = this->extractGet(requestLine[1]);
+    if (reqVec.size() > 1) {
+        this->Body = reqVec[reqVec.size() - 1]; // the last line of the request
+    }
 
-    // everything except for the last 3 lines and the 1st line
-    for (size_t i = 1; i < reqVec.size() - 3; ++i) {
-        this->Headers.push_back(reqVec[i]);
+    if (reqVec.size() >= 4) {
+        // everything except for the last 3 lines and the 1st line
+        for (size_t i = 1; i < reqVec.size() - 3; ++i) {
+            this->Headers.push_back(reqVec[i]);
+        }
     }
 }
 
