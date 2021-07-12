@@ -48,14 +48,15 @@ Request::Request(const std::string& request)
     }
 
     this->Method = requestLine[0];
-    this->Document = this->DocumentOriginal = requestLine[1];
+    this->Document = this->DocumentOriginal = this->extractDocument(requestLine[1]);
     this->Version = requestLine[2];
     this->Body = reqVec[reqVec.size() - 1]; // the last line of the request
-    this->parseURL(this->Document);
+    this->Document = this->decodeURL(this->Document);
+    this->GetParameters = this->extractGet(requestLine[1]);
 
     // everything except for the last 3 lines and the 1st line
     for (size_t i = 1; i < reqVec.size() - 3; ++i) {
-        this->Headers.push_back(std::move(reqVec[i]));
+        this->Headers.push_back(reqVec[i]);
     }
 }
 
@@ -78,23 +79,55 @@ void Request::splitString(const std::string& str, char c, std::vector<std::strin
 }
 
 /**
- * parses url encoded strings into their standard form
+ * performs url decoding on str
  */
-void Request::parseURL(std::string& document)
+std::string Request::decodeURL(std::string& str)
 {
     std::ostringstream oss;
-    for (size_t i = 0; i < document.size(); ++i) {
-        if (document[i] == '%') {
+    for (size_t i = 0; i < str.size(); ++i) {
+        if (str[i] == '%') {
             i++;
-            std::string code(document.substr(i, 2));
+            std::string code(str.substr(i, 2));
             oss << static_cast<char>(std::strtol(code.c_str(), NULL, 16));
             i++;
-        } else if (document[i] == '+') {
+        } else if (str[i] == '+') {
             oss << ' ';
         } else {
-            oss << document[i];
+            oss << str[i];
         }
     }
-    document = oss.str();
+    return oss.str();
+}
+
+/**
+ * extract the string before the first '?' in the document line
+ */
+std::string Request::extractDocument(std::string& str) {
+    std::ostringstream oss;
+    for (size_t i = 0; str[i] && str[i] != '?'; ++i) {
+        oss << str[i];
+    }
+    return oss.str();
+}
+
+/**
+ * extract the string after the first '?' in the document line
+ */
+std::string Request::extractGet(std::string& str) {
+    std::ostringstream oss;
+    const char* s = str.c_str();
+
+    // seek to the start of the GET parameters
+    size_t i;
+    for (i = 0; s[i] && s[i] != '?'; ++i)
+        ;
+    i++;
+
+    // return the rest of the string
+    for (; s[i]; ++i) {
+        oss << s[i];
+    }
+
+    return oss.str();
 }
 
