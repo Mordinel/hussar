@@ -9,6 +9,7 @@
 class Request {
     private:
 
+        std::string extractHeaderContent(std::string& str);
         std::string extractDocument(std::string& str);
         std::string extractGet(std::string& str);
 

@@ -11,7 +11,7 @@ Request::Request(const std::string& request)
     this->splitString(request, '\n', reqVec);
 
     if (reqVec.size() < 1) {
-        isRequestGood = false;
+        this->isRequestGood = false;
         return;
     }
 
@@ -21,49 +21,48 @@ Request::Request(const std::string& request)
         
     // invalid request line
     if (requestLine.size() != 3) {
-        isRequestGood = false;
+        this->isRequestGood = false;
         return;
     }
-    
-    std::ostringstream oss;
-    std::vector<std::string> splitLine;
-    for (std::string& line : reqVec) {
-        oss.clear();
-        splitLine.clear();
 
-        if (line.rfind("User-Agent:", 0) != std::string::npos) {
-            this->splitString(line, ' ', splitLine);
-            oss << splitLine[1];
-            for (size_t n = 2; n < splitLine.size(); ++n) {
-                oss << " " << splitLine[n];
-            }
-            this->UserAgent = oss.str();
-        } else if (line.rfind("Host:", 0) != std::string::npos) {
-            this->splitString(line, ' ', splitLine);
-            if (splitLine.size() > 1) {
-                this->Host = splitLine[1];
-            }
-        }
-
-    }
-
+    // parse the request line
     this->Method = requestLine[0];
     this->DocumentOriginal = requestLine[1];
-    this->Document = this->extractDocument(this->DocumentOriginal);
     this->Version = requestLine[2];
+    this->Document = this->extractDocument(this->DocumentOriginal);
     this->Document = this->decodeURL(this->Document);
     this->GetParameters = this->extractGet(requestLine[1]);
-    if (reqVec.size() > 1) {
-        this->Body = reqVec[reqVec.size() - 1]; // the last line of the request
-    }
 
-    if (reqVec.size() >= 4) {
-        // everything except for the last 3 lines and the 1st line
-        for (size_t i = 1; i < reqVec.size() - 3; ++i) {
-            this->Headers.push_back(reqVec[i]);
+    // TODO validate request line
+    // this->validateRequestLine
+
+    // parse the request headers and extract the request body
+    size_t lineIdx;
+    std::ostringstream oss;
+    std::vector<std::string> splitLine;
+    for (lineIdx = 1; lineIdx < reqVec.size(); ++lineIdx) {
+        oss.clear();
+        splitLine.clear();
+        std::string& line = reqVec[lineIdx];
+
+        if (line == "") {
+            lineIdx++;
+            for (; lineIdx < reqVec.size(); ++lineIdx) {
+                line = reqVec[lineIdx];
+                oss << line;
+            }
+            this->Body = oss.str();
+            break;
+        }
+
+        if (line.rfind("User-Agent:", 0) != std::string::npos) {
+            this->UserAgent = this->extractHeaderContent(line);
+        } else if (line.rfind("Host:", 0) != std::string::npos) {
+            this->Host = this->extractHeaderContent(line);
         }
     }
 }
+
 
 /**
  * splits the string str into vector strVec, delimited by char c
@@ -101,6 +100,30 @@ std::string Request::decodeURL(std::string& str)
             oss << str[i];
         }
     }
+    return oss.str();
+}
+
+/**
+ * extract the string after the host header name
+ * returns an empty string if header is formatted incorrectly
+ */
+std::string Request::extractHeaderContent(std::string& str)
+{
+    std::ostringstream oss;
+    std::vector<std::string> splitLine;
+    size_t n;
+
+    this->splitString(str, ' ', splitLine);
+
+    if (splitLine.size() < 2) {
+        return "[EMPTY HEADER]";
+    }
+
+    oss << splitLine[1];
+    for (n = 2; n < splitLine.size(); ++n) {
+        oss << " " << splitLine[n];
+    }
+
     return oss.str();
 }
 
