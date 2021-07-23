@@ -120,62 +120,67 @@ srv_disconnect:
 
 std::string* Hussar::handleRequest(Request& req, int client, char* host)
 {
+    std::vector<std::string> docInfo;
+    std::string body;
+    std::string mime;
+    std::string http;
+    std::string status;
+
     if (req.isRequestGood) {
-        std::vector<std::string> docInfo;
         this->serveDoc(req.Document, this->docRoot, docInfo);
 
-        std::string body = std::move(docInfo[0]);
-        std::string mime = std::move(docInfo[1]);
-        std::string http = std::move(docInfo[2]);
+        body = docInfo[0];
+        mime = docInfo[1];
+        http = docInfo[2];
 
-
-        std::string status;
         // add more statuses later
         if (http == "200") {
             status = "OK";
         } else if (http == "404") {
             status = "NOT FOUND";
+            mime = "text/html";
         }
-
-        // get local time
-        auto now = std::chrono::system_clock::now();
-        auto time = std::chrono::system_clock::to_time_t(now);
-        auto localTime = *std::localtime(&time);
-
-        // format date for http output
-        std::stringstream dateStream;
-        dateStream << std::put_time(&localTime, "%a, %d %b %Y %H:%M:%S");
-        std::string date = dateStream.str();
-
-        if (this->verbose) {
-            this->printLock.lock();
-            if (req.UserAgent.size()) {
-                std::cout << date << "\t" << host << "\t" << req.Method << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\t" << StripString(req.UserAgent) << "\n";
-            } else {
-                std::cout << date << "\t" << host << "\t" << req.Method << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\n";
-            }
-            this->printLock.unlock();
-        }
-
-        std::string connection = "Closed";
-
-        // build response payload to return to client
-        std::stringstream responseStream;
-        responseStream << "HTTP/1.1 " << http << " " << status << "\n";
-        responseStream << "Date: " << date << "\n";
-        responseStream << "Server: " << SERVER_NAME << "\n";
-        responseStream << "Content-Length: " << body.size() << "\n";
-        responseStream << "Content-Type: " << mime << "\n";
-        responseStream << "Connection: " << connection << "\n";
-        responseStream << "\n";
-        responseStream << body;
-
-        std::string* response = new std::string(responseStream.str());
-        return response;
+    } else {
+        body = "<h1>400: Bad Request!</h1>";
+        mime = "text/html";
+        http = "400";
+        status = "BAD REQUEST";
     }
 
-    // MAKE THIS RETURN A 500 ERROR
-    std::string* response = new std::string("BAD REQUEST");
+    // get local time
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::system_clock::to_time_t(now);
+    auto localTime = *std::localtime(&time);
+    
+    // format date for http output
+    std::stringstream dateStream;
+    dateStream << std::put_time(&localTime, "%a, %d %b %Y %H:%M:%S");
+    std::string date = dateStream.str();
+    
+    if (this->verbose) {
+        this->printLock.lock();
+        if (req.UserAgent.size()) {
+            std::cout << date << "\t" << host << "\t" << StripString(req.Method) << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\t" << StripString(req.UserAgent) << "\n";
+        } else {
+            std::cout << date << "\t" << host << "\t" << StripString(req.Method) << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\n";
+        }
+        this->printLock.unlock();
+    }
+    
+    std::string connection = "Closed";
+    
+    // build response payload to return to client
+    std::stringstream responseStream;
+    responseStream << "HTTP/1.1 " << http << " " << status << "\n";
+    responseStream << "Date: " << date << "\n";
+    responseStream << "Server: " << SERVER_NAME << "\n";
+    responseStream << "Content-Length: " << body.size() << "\n";
+    responseStream << "Content-Type: " << mime << "\n";
+    responseStream << "Connection: " << connection << "\n";
+    responseStream << "\n";
+    responseStream << body;
+    
+    std::string* response = new std::string(responseStream.str());
     return response;
 }
 

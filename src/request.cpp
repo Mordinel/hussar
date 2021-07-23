@@ -67,7 +67,6 @@ void SplitString(const std::string& str, char c, std::vector<std::string>& strVe
     }
 }
 
-
 /**
  * populates the Request class data members with request data
  */
@@ -101,8 +100,11 @@ Request::Request(const std::string& request)
     this->Document = UrlDecode(this->Document);
     this->GetParameters = this->extractGet(requestLine[1]);
 
-    // TODO validate request line
-    // this->validateRequestLine
+    // validate request line
+    if (not this->validateRequestLine(requestLine)){
+        this->isRequestGood = false;
+        return;
+    }
 
     // parse the request headers and extract the request body
     size_t lineIdx;
@@ -129,6 +131,47 @@ Request::Request(const std::string& request)
             this->Host = this->extractHeaderContent(line);
         }
     }
+}
+
+bool Request::validateRequestLine(std::vector<std::string>& requestLine)
+{
+    std::string& method   = requestLine[0];
+    std::string& document = requestLine[1];
+    std::string& httpver  = requestLine[2];
+
+    if ((method != "GET") && (method != "POST")) {
+        std::cerr << method << " method not GET or POST\n";
+        return false;
+    }
+
+    std::vector<std::string> httpvervec;
+    SplitString(httpver, '/', httpvervec);
+    if (httpvervec.size() != 2) {
+        std::cerr << httpvervec.size() << " httpver not len 2\n";
+        return false;
+    }
+
+    std::string& protocol = httpvervec[0];
+    if (protocol != "HTTP") {
+        std::cerr << protocol << " protocol not HTTP\n";
+        return false;
+    }
+
+    std::string strversion = httpvervec[1].substr(0,3);
+    float version;
+    std::istringstream iss(strversion);
+    iss >> version;
+    if (iss.fail()) {
+        std::cerr << strversion << " version not float\n";
+        return false;
+    }
+
+    if ((version < 0.9f) || (version > 1.2f)) {
+        std::cerr << version << " version not correct\n";
+        return false;
+    }
+
+    return true;
 }
 
 /**

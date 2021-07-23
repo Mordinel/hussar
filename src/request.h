@@ -16,6 +16,7 @@ class Request {
         std::string extractHeaderContent(std::string& str);
         std::string extractDocument(std::string& str);
         std::string extractGet(std::string& str);
+        bool validateRequestLine(std::vector<std::string>& requestLine);
 
     public:
         bool isRequestGood;
