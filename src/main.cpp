@@ -17,7 +17,7 @@ void printHelp(char* arg0)
 int main(int argc, char* argv[])
 {
     std::string docRoot = "";
-    std::string host = "0.0.0.0";
+    std::string host = "127.0.0.1";
     unsigned short port = 8080;
     unsigned int threads = 0; // 0 defaults to max hardware threads
     bool verbose = false;

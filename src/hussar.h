@@ -25,7 +25,7 @@
 #include "request.h"
 #include "thread_pool/thread_pool.h"
 
-#define SERVER_NAME "HussarHTTP"
+#define SERVER_NAME "hussar"
 #define SOCKET_MAXTIME 30
 
 class Hussar {
