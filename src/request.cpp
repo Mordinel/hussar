@@ -1,6 +1,71 @@
 #include "request.h"
 
 /**
+ * performs url decoding on str
+ */
+std::string UrlDecode(const std::string& str)
+{
+    std::ostringstream oss;
+    for (size_t i = 0; i < str.size(); ++i) {
+        if (str[i] == '%') {
+            i++;
+            std::string code(str.substr(i, 2));
+            oss << static_cast<char>(std::strtol(code.c_str(), NULL, 16));
+            i++;
+        } else if (str[i] == '+') {
+            oss << ' ';
+        } else {
+            oss << str[i];
+        }
+    }
+    return oss.str();
+}
+
+std::string StripString(const std::string& str)
+{
+    std::ostringstream oss;
+
+    for (char c : str) {
+        switch (c) {
+            case 0x07:
+            case 0x08:
+            case 0x09:
+            case 0x0a:
+            case 0x0b:
+            case 0x0c:
+            case 0x0d:
+            case 0x1b:
+            case 0x7f:
+                break;
+            default: [[likely]]
+                oss << c;
+                break;
+        }
+    }
+
+    return oss.str();
+}
+
+/**
+ * splits the string str into vector strVec, delimited by char c
+ */
+void SplitString(const std::string& str, char c, std::vector<std::string>& strVec)
+{
+    std::string::size_type i = 0;
+    std::string::size_type j = str.find(c);
+
+    while (j != std::string::npos) {
+        strVec.push_back(str.substr(i, j - i));
+        i = ++j;
+        j = str.find(c, j);
+        if (j == std::string::npos) {
+            strVec.push_back(str.substr(i, str.length()));
+        }
+    }
+}
+
+
+/**
  * populates the Request class data members with request data
  */
 Request::Request(const std::string& request)
@@ -8,7 +73,7 @@ Request::Request(const std::string& request)
 {
     // split into lines
     std::vector<std::string> reqVec;
-    this->splitString(request, '\n', reqVec);
+    SplitString(request, '\n', reqVec);
 
     if (reqVec.size() < 1) {
         this->isRequestGood = false;
@@ -17,7 +82,7 @@ Request::Request(const std::string& request)
 
     // get the first line as a vector
     std::vector<std::string> requestLine;
-    this->splitString(reqVec[0], ' ', requestLine);
+    SplitString(reqVec[0], ' ', requestLine);
         
     // invalid request line
     if (requestLine.size() != 3) {
@@ -30,7 +95,7 @@ Request::Request(const std::string& request)
     this->DocumentOriginal = requestLine[1];
     this->Version = requestLine[2];
     this->Document = this->extractDocument(this->DocumentOriginal);
-    this->Document = this->decodeURL(this->Document);
+    this->Document = UrlDecode(this->Document);
     this->GetParameters = this->extractGet(requestLine[1]);
 
     // TODO validate request line
@@ -63,49 +128,8 @@ Request::Request(const std::string& request)
     }
 }
 
-
-/**
- * splits the string str into vector strVec, delimited by char c
- */
-void Request::splitString(const std::string& str, char c, std::vector<std::string>& strVec)
-{
-    std::string::size_type i = 0;
-    std::string::size_type j = str.find(c);
-
-    while (j != std::string::npos) {
-        strVec.push_back(str.substr(i, j - i));
-        i = ++j;
-        j = str.find(c, j);
-        if (j == std::string::npos) {
-            strVec.push_back(str.substr(i, str.length()));
-        }
-    }
-}
-
-/**
- * performs url decoding on str
- */
-std::string Request::decodeURL(std::string& str)
-{
-    std::ostringstream oss;
-    for (size_t i = 0; i < str.size(); ++i) {
-        if (str[i] == '%') {
-            i++;
-            std::string code(str.substr(i, 2));
-            oss << static_cast<char>(std::strtol(code.c_str(), NULL, 16));
-            i++;
-        } else if (str[i] == '+') {
-            oss << ' ';
-        } else {
-            oss << str[i];
-        }
-    }
-    return oss.str();
-}
-
 /**
  * extract the string after the host header name
- * returns an empty string if header is formatted incorrectly
  */
 std::string Request::extractHeaderContent(std::string& str)
 {
@@ -113,11 +137,7 @@ std::string Request::extractHeaderContent(std::string& str)
     std::vector<std::string> splitLine;
     size_t n;
 
-    this->splitString(str, ' ', splitLine);
-
-    if (splitLine.size() < 2) {
-        return "[EMPTY HEADER]";
-    }
+    SplitString(str, ' ', splitLine);
 
     oss << splitLine[1];
     for (n = 2; n < splitLine.size(); ++n) {

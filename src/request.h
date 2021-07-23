@@ -6,6 +6,10 @@
 #include <string>
 #include <vector>
 
+std::string UrlDecode(const std::string& str);
+std::string StripString(const std::string& str);
+void SplitString(const std::string& str, char c, std::vector<std::string>& strVec);
+
 class Request {
     private:
 
@@ -13,8 +17,6 @@ class Request {
         std::string extractDocument(std::string& str);
         std::string extractGet(std::string& str);
 
-        std::string decodeURL(std::string& str);
-        void splitString(const std::string& str, char c, std::vector<std::string>& strVec);
     public:
         bool isRequestGood;
         std::string Method;
