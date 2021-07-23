@@ -133,6 +133,9 @@ Request::Request(const std::string& request)
     }
 }
 
+/**
+ * validates the request line, returns true if it's valid, false if it's not.
+ */
 bool Request::validateRequestLine(std::vector<std::string>& requestLine)
 {
     std::string& method   = requestLine[0];
