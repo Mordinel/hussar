@@ -21,6 +21,9 @@ std::string UrlDecode(const std::string& str)
     return oss.str();
 }
 
+/**
+ * strips terminal control chars from a string
+ */
 std::string StripString(const std::string& str)
 {
     std::ostringstream oss;
