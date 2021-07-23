@@ -55,9 +55,9 @@ Request::Request(const std::string& request)
             break;
         }
 
-        if (line.rfind("User-Agent:", 0) != std::string::npos) {
+        if (line.rfind("User-Agent: ", 0) != std::string::npos) {
             this->UserAgent = this->extractHeaderContent(line);
-        } else if (line.rfind("Host:", 0) != std::string::npos) {
+        } else if (line.rfind("Host: ", 0) != std::string::npos) {
             this->Host = this->extractHeaderContent(line);
         }
     }
