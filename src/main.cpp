@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
        }
     }
 
-    Hussar server(host, port, docRoot, threads, verbose);
+    hussar::Hussar server(host, port, docRoot, threads, verbose);
     server.Listen();
 
     return 0;
