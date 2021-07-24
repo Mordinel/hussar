@@ -79,9 +79,8 @@ namespace hussar {
                         std::string bufStr(buf);
                         Request r(bufStr);
         
-                        std::string* response = this->handleRequest(r, client, host);
-                        send(client, response->c_str(), response->size(), 0);
-                        delete response;
+                        std::string response = this->handleRequest(r, client, host);
+                        send(client, response.c_str(), response.size(), 0);
         
                         goto srv_disconnect;
                         break;
@@ -92,7 +91,10 @@ namespace hussar {
             close(client);
         }
 
-        std::string* handleRequest(Request& req, int client, char* host)
+        /**
+         * performs request parsing and response
+         */
+        std::string handleRequest(Request& req, int client, char* host)
         {
             std::vector<std::string> docInfo;
             std::string body;
@@ -154,8 +156,7 @@ namespace hussar {
             responseStream << "\n";
             responseStream << body;
             
-            std::string* response = new std::string(responseStream.str());
-            return response;
+            return responseStream.str();
         }
 
         /**
@@ -247,7 +248,7 @@ namespace hussar {
     public:
 
         /**
-         * binds a host:port socket, then calls this->Listen to listen for incoming connections
+         * binds a host:port socket
          */
         Hussar(const std::string& host, const unsigned short port, const std::string& docRoot, unsigned int threadcount, bool verbose)
             : host(std::move(host)), port(port), docRoot(docRoot), threadpool(threadcount), verbose(verbose)
