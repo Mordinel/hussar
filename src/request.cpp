@@ -143,20 +143,17 @@ bool Request::validateRequestLine(std::vector<std::string>& requestLine)
     std::string& httpver  = requestLine[2];
 
     if ((method != "GET") && (method != "POST")) {
-        std::cerr << method << " method not GET or POST\n";
         return false;
     }
 
     std::vector<std::string> httpvervec;
     SplitString(httpver, '/', httpvervec);
     if (httpvervec.size() != 2) {
-        std::cerr << httpvervec.size() << " httpver not len 2\n";
         return false;
     }
 
     std::string& protocol = httpvervec[0];
     if (protocol != "HTTP") {
-        std::cerr << protocol << " protocol not HTTP\n";
         return false;
     }
 
@@ -165,12 +162,10 @@ bool Request::validateRequestLine(std::vector<std::string>& requestLine)
     std::istringstream iss(strversion);
     iss >> version;
     if (iss.fail()) {
-        std::cerr << strversion << " version not float\n";
         return false;
     }
 
     if ((version < 0.9f) || (version > 1.2f)) {
-        std::cerr << version << " version not correct\n";
         return false;
     }
 
