@@ -6,7 +6,7 @@
 
 void printHelp(char* arg0)
 {
-    std::cout << "Usage: " << arg0 << " [-hv -p <port> -t <thead count> -d <document root>]\n";
+    std::cout << "Usage: " << arg0 << " [-hv -p <port> -t <thread count> -d <document root>]\n";
     std::cout << "\t-h\t\tDisplay this help\n";
     std::cout << "\t-v\t\tVerbose console output\n";
     std::cout << "\t-p <PORT>\tPort to listen on\n";
