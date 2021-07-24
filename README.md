@@ -1,12 +1,14 @@
 # hussar
 A threaded web server
 
-You can change the document root and bound socket from [main.cpp](./src/main.cpp)
+The default configuration can be changed in [main.cpp](./src/main.cpp)
 
-Building:
+## building
 
+    git clone https://github.com/SOROM2/hussar.git --recurse-submodules
+    cd hussar
     make
+   
+## running
 
-Running:
-
-    make run
+    ./hussar -h
