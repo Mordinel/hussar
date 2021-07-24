@@ -11,7 +11,7 @@ The default configuration can be changed in [main.cpp](./src/main.cpp)
    
 ## running
 
-    $ ./hussar -h
+    ./hussar -h
     Usage: ./hussar [-hv -p <port> -t <thread count> -d <document root>]
 	    -h		Display this help
 	    -v		Verbose console output
