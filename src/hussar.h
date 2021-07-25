@@ -25,6 +25,7 @@ namespace hussar {
             {"exe", "application/octet-stream"},
             {"pdf", "application/pdf"},
             {"zip", "application/zip"},
+            {"ico", "image/x-icon"},
             {"gif", "image/gif"},
             {"png", "image/png"},
             {"jpg", "image/jpeg"},
