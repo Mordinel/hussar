@@ -165,6 +165,7 @@ namespace hussar {
          */
         void serveDoc(std::string& document, const std::string& docRoot, std::vector<std::string>& docInfo)
         {
+            std::filesystem::path p;
             std::regex slashes("/+");
             std::regex dots("[.][.]+");
             document = std::regex_replace(document, slashes, "/"); // collapse slashes into a single slash
@@ -175,10 +176,12 @@ namespace hussar {
                 document = "/index.html";
             } else if (document == "/") { // if directory is /, then make the document target index.html
                 document = "/index.html";
+            } else if (document == "") { // if directory is nothing somehow
+                goto nonexistent_file;
             }
         
             // get the absolute path of the requested document
-            std::filesystem::path p(std::filesystem::current_path());
+            p = std::filesystem::current_path();
             p /= docRoot;
             p += document;
             p = std::filesystem::weakly_canonical(p);
@@ -187,18 +190,23 @@ namespace hussar {
             // docInfo[1] = mime type
             // docInfo[2] = http status
             if (std::filesystem::exists(p)) {
-                // file exists, load it into docInfo
-                std::ifstream file(p);
-                docInfo.push_back(
-                        std::string(
-                            (std::istreambuf_iterator<char>(file)),
-                             std::istreambuf_iterator<char>()));
+                if (std::filesystem::is_regular_file(p)) {
+                    // file exists, load it into docInfo
+                    std::ifstream file(p);
+                    docInfo.push_back(
+                            std::string(
+                                (std::istreambuf_iterator<char>(file)),
+                                 std::istreambuf_iterator<char>()));
         
-                std::string* mime = this->getMime(document);
+                    std::string* mime = this->getMime(document);
         
-                docInfo.push_back(*mime);
-                docInfo.push_back("200");
+                    docInfo.push_back(*mime);
+                    docInfo.push_back("200");
+                } else {
+                    goto nonexistent_file;
+                }
             } else {
+            nonexistent_file:
                 // try a custom 404 page
                 p = std::filesystem::current_path();
                 p /= docRoot;
