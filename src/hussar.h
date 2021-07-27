@@ -116,6 +116,8 @@ namespace hussar {
                 } else if (http == "404") {
                     status = "NOT FOUND";
                     mime = "text/html";
+                } else if (http == "414") {
+                    status = "URI TOO LONG";
                 }
             } else {
                 body = "<h1>400: Bad Request!</h1>";
@@ -178,6 +180,11 @@ namespace hussar {
                 document = "/index.html";
             } else if (document == "") { // if directory is nothing somehow
                 goto nonexistent_file;
+            } else if (document.size() > 255) {
+                    docInfo.push_back("<h1>414: Uri Too Long!</h1>");
+                    docInfo.push_back("text/html");
+                    docInfo.push_back("414");
+                    return;
             }
         
             // get the absolute path of the requested document
