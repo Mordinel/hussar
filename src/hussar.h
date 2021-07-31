@@ -248,11 +248,11 @@ namespace hussar {
                 return &this->mimes.begin()->second; // default to 1st item (text file)
             }
         
-            // create a string view of the extension
-            std::string_view extension(document.begin() + l + 1, document.end());
+            // create a string of the extension
+            std::string extension(document.begin() + l + 1, document.end());
         
             // find extension in this->mimes
-            auto mimeIter = this->mimes.find(std::string(extension));
+            auto mimeIter = this->mimes.find(extension);
         
             if (mimeIter == this->mimes.end()) {
                 return &this->mimes.begin()->second;
