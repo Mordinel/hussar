@@ -12,9 +12,10 @@ The default configuration can be changed in [main.cpp](./src/main.cpp)
 ## running
 
     ./hussar -h
-    Usage: ./hussar [-hv -p <port> -t <thread count> -d <document root>]
-	    -h		Display this help
-	    -v		Verbose console output
-	    -p <PORT>	Port to listen on
-	    -t <THREAD>	Threads to use
-	    -d <DIR>	Document root directory
+    Usage: ./hussar [-hv -i <ipv4> -p <port> -t <thread count> -d <document root>]
+            -h              Display this help
+            -v              Verbose console output
+            -i <IPV4>       Ipv4 to bind to
+            -p <PORT>       Port to listen on
+            -t <THREAD>     Threads to use
+            -d <DIR>        Document root directory

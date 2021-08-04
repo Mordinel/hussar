@@ -6,9 +6,10 @@
 
 void printHelp(char* arg0)
 {
-    std::cout << "Usage: " << arg0 << " [-hv -p <port> -t <thread count> -d <document root>]\n";
+    std::cout << "Usage: " << arg0 << " [-hv -i <ipv4> -p <port> -t <thread count> -d <document root>]\n";
     std::cout << "\t-h\t\tDisplay this help\n";
     std::cout << "\t-v\t\tVerbose console output\n";
+    std::cout << "\t-i <IPV4>\tIpv4 to bind to\n";
     std::cout << "\t-p <PORT>\tPort to listen on\n";
     std::cout << "\t-t <THREAD>\tThreads to use\n";
     std::cout << "\t-d <DIR>\tDocument root directory\n";
@@ -25,7 +26,7 @@ int main(int argc, char* argv[])
     std::stringstream ss;
 
     int c;
-    while ((c = getopt(argc, argv, "hvp:t:d:")) != -1) {
+    while ((c = getopt(argc, argv, "hvi:p:t:d:")) != -1) {
         switch (c) {
 
             case 'h':
@@ -34,6 +35,10 @@ int main(int argc, char* argv[])
 
             case 'v':
                 verbose = true;
+                break;
+
+            case 'i':
+                host = optarg;
                 break;
 
             case 'p':
