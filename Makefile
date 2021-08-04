@@ -21,7 +21,7 @@ release: $(PCH_SOURCE).pch $(EXE)
 debug: $(PCH_SOURCE)-debug.pch $(EXE)-debug
 
 run:
-	if [ -f $(EXE)-debug ]; then lldb -o run ./$(EXE)-debug $(EXE_ARGS); elif [ -f $(EXE) ]; then ./$(EXE) $(EXE_ARGS); fi
+	if [ -f $(EXE)-debug ]; then ./$(EXE)-debug $(EXE_ARGS); elif [ -f $(EXE) ]; then ./$(EXE) $(EXE_ARGS); fi
 
 clean:
 	rm -f $(EXE) $(PCH_SOURCE).pch $(EXE)-debug $(PCH_SOURCE)-debug.pch
