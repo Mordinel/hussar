@@ -138,11 +138,21 @@ namespace hussar {
             
             if (this->verbose) {
                 PrintLock.lock();
+#ifdef DEBUG
+                std::cout << "\n";
+                for (auto& p : req.GET) {
+                    std::cout << "GET[" << StripString(p.first) << "] = " << StripString(p.second) << "\n";
+                }
+                for (auto& p : req.POST) {
+                    std::cout << "POST[" << StripString(p.first) << "] = " << StripString(p.second) << "\n";
+                }
+#endif
                 if (req.UserAgent.size()) {
                     std::cout << date << "\t" << host << "\t" << StripString(req.Method) << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\t" << StripString(req.UserAgent) << "\n";
                 } else {
                     std::cout << date << "\t" << host << "\t" << StripString(req.Method) << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\n";
                 }
+
                 PrintLock.unlock();
             }
             
@@ -153,11 +163,17 @@ namespace hussar {
             responseStream << "HTTP/1.1 " << http << " " << status << "\n";
             responseStream << "Date: " << date << "\n";
             responseStream << "Server: " << SERVER_NAME << "\n";
-            responseStream << "Content-Length: " << body.size() << "\n";
-            responseStream << "Content-Type: " << mime << "\n";
+            if (req.Method != "HEAD") {
+                responseStream << "Content-Length: " << body.size() << "\n";
+                responseStream << "Content-Type: " << mime << "\n";
+            } else {
+                responseStream << "Content-Length: 0\n";
+            }
             responseStream << "Connection: " << connection << "\n";
             responseStream << "\n";
-            responseStream << body;
+            if (req.Method != "HEAD") {
+                responseStream << body;
+            }
             
             return responseStream.str();
         }

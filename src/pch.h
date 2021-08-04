@@ -13,7 +13,7 @@
 #include <sys/socket.h> // sockets
 
 // cpp includes
-#include <unordered_map>    // keeps threads in scope
+#include <unordered_map>    // keeps threads in scope & hash map
 #include <filesystem>       // file reading
 #include <fstream>          // file streams
 #include <thread>           // threading
