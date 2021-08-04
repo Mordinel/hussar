@@ -152,9 +152,9 @@ namespace hussar {
             if (this->verbose) {
                 PrintLock.lock();
                 if (req.UserAgent.size()) {
-                    std::cout << date << "\t" << host << "\t" << StripString(req.Method) << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\t" << StripString(req.UserAgent) << "\n";
+                    std::cout << host << "\t" << date << "\t" << StripString(req.Method) << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\t" << StripString(req.UserAgent) << "\n";
                 } else {
-                    std::cout << date << "\t" << host << "\t" << StripString(req.Method) << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\n";
+                    std::cout << host << "\t" << date << "\t" << StripString(req.Method) << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\n";
                 }
 
                 PrintLock.unlock();
