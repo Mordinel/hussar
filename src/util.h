@@ -51,7 +51,7 @@ namespace hussar {
                 case 0x1b:
                 case 0x7f:
                     break;
-                default: [[likely]]
+                default:
                     oss << c;
                     break;
             }
