@@ -136,17 +136,21 @@ namespace hussar {
             dateStream << std::put_time(&localTime, "%a, %d %b %Y %H:%M:%S");
             std::string date = dateStream.str();
             
+            // prints the GET and POST request parameters in debug mode
+#ifdef DEBUG
+            PrintLock.lock();
+            std::cout << "\n";
+            for (auto& p : req.GET) {
+                std::cout << "GET[" << StripString(p.first) << "] = " << StripString(p.second) << "\n";
+            }
+            for (auto& p : req.POST) {
+                std::cout << "POST[" << StripString(p.first) << "] = " << StripString(p.second) << "\n";
+            }
+            PrintLock.unlock();
+#endif
+
             if (this->verbose) {
                 PrintLock.lock();
-#ifdef DEBUG
-                std::cout << "\n";
-                for (auto& p : req.GET) {
-                    std::cout << "GET[" << StripString(p.first) << "] = " << StripString(p.second) << "\n";
-                }
-                for (auto& p : req.POST) {
-                    std::cout << "POST[" << StripString(p.first) << "] = " << StripString(p.second) << "\n";
-                }
-#endif
                 if (req.UserAgent.size()) {
                     std::cout << date << "\t" << host << "\t" << StripString(req.Method) << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\t" << StripString(req.UserAgent) << "\n";
                 } else {

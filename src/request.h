@@ -76,7 +76,8 @@ namespace hussar {
         }
 
         /**
-         * parses the get parameters
+         * parses the given parameters in getStr and stores them in dest
+         * handles both GET and POST parameters
          */
         void parseParams(std::unordered_map<std::string, std::string>& dest, std::string& getStr)
         {
@@ -89,8 +90,9 @@ namespace hussar {
             std::string value;
 
             char c;
-            for (iss >> c ;; iss >> c) {
-                if (iss.eof()) {
+            for (iss >> c ;; iss >> c) { // extract from the istream into c
+                if (iss.eof()) { // EXIT CASE
+                    // store the last parameter if that needs to happen
                     if (state == PG_VALUE && name.size()) {
                         value = oss.str();
                         if (value.size()) {
@@ -101,6 +103,7 @@ namespace hussar {
                     break;
                 }
 
+                // state machine parser consumes 'c' and populates 'name' and 'value', then inserts the pair into the hashmap
                 switch(c) {
                     case '=':
                         if (state == PG_VALUE) {
@@ -217,6 +220,9 @@ namespace hussar {
             return true;
         }
 
+        /**
+         * returns true if the name is alphabetic + '_', else returns false
+         */
         bool validateParamName(const std::string& name)
         {
             if (not name.size())
@@ -242,6 +248,7 @@ namespace hussar {
         Request(const std::string& request)
             : isRequestGood(true)
         {
+        // dump the plaintext request if compiled in debug mode
 #ifdef DEBUG
             std::cout << request << "\n";
 #endif
