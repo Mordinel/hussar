@@ -41,6 +41,12 @@ namespace hussar {
          * handles a single client connection
          */
         void handleConnection(int client, int timeout) {
+        #ifdef DEBUG
+            PrintLock.lock();
+                std::cout << "Connection opened.\n";
+            PrintLock.unlock();
+        #endif
+
             // allocate stack buffers for host and service strings
             char host[NI_MAXHOST];
             char svc[NI_MAXSERV];
@@ -53,7 +59,7 @@ namespace hussar {
         
             // allocate a stack buffer for recieved data
             char buf[4096];
-        
+
             // read and handle bytes until the connection ends
             while (true) {
                 // set the recv buffer to null chars
@@ -82,13 +88,24 @@ namespace hussar {
         
                         std::string response = this->handleRequest(r, client, host);
                         send(client, response.c_str(), response.size(), 0);
-        
+
+                        // if keep alive
+                        if (r.KeepAlive) {
+                            continue;
+                        }
+
                         goto srv_disconnect;
                         break;
                 }
             }
         
         srv_disconnect:
+        #ifdef DEBUG
+            PrintLock.lock();
+                std::cout << "Connection closed.\n";
+            PrintLock.unlock();
+        #endif
+
             close(client);
         }
 
@@ -160,7 +177,7 @@ namespace hussar {
                 PrintLock.unlock();
             }
             
-            std::string connection = "Closed";
+            std::string connection(req.KeepAlive ? "keep-alive" : "close");
             
             // build response payload to return to client
             std::stringstream responseStream;

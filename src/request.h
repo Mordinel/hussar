@@ -8,6 +8,7 @@ namespace hussar {
 
     public:
         bool isRequestGood;
+        bool KeepAlive;
         std::string Method;
         std::string Document;
         std::string DocumentOriginal;
@@ -40,7 +41,7 @@ namespace hussar {
                 oss << " " << splitLine[n];
             }
         
-            return oss.str();
+            return StripString(oss.str());
         }
     
         /**
@@ -246,11 +247,13 @@ namespace hussar {
          * populates the Request class data members with request data
          */
         Request(const std::string& request)
-            : isRequestGood(true)
+            : isRequestGood(true), KeepAlive(false)
         {
         // dump the plaintext request if compiled in debug mode
 #ifdef DEBUG
-            std::cout << request << "\n";
+            PrintLock.lock();
+                std::cout << request << "\n";
+            PrintLock.unlock();
 #endif
             // split into lines
             std::vector<std::string> reqVec;
@@ -287,6 +290,9 @@ namespace hussar {
         
             // parse the request headers
             size_t lineIdx = this->collectHeaders(reqVec);
+
+            // set connection to keepalive
+            this->KeepAlive = this->Connection == "keep-alive";
 
             // extract the request body
             this->Body = this->extractBody(reqVec, lineIdx);
