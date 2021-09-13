@@ -16,12 +16,14 @@ namespace hussar {
      */
     std::string UrlDecode(const std::string& str)
     {
+        char c;
         std::ostringstream oss;
         for (size_t i = 0; i < str.size(); ++i) {
             if (str[i] == '%') {
                 i++;
                 std::string code(str.substr(i, 2));
-                oss << static_cast<char>(std::strtol(code.c_str(), NULL, 16));
+                c = static_cast<char>(std::strtol(code.c_str(), NULL, 16));
+                if (c) oss << c;
                 i++;
             } else if (str[i] == '+') {
                 oss << ' ';
