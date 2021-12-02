@@ -7,8 +7,9 @@ namespace hussar {
     class Request {
 
     public:
-        bool isRequestGood;
+        bool isGood;
         bool KeepAlive;
+        std::string RemoteHost;
         std::string Method;
         std::string Document;
         std::string DocumentOriginal;
@@ -19,7 +20,7 @@ namespace hussar {
         std::string UserAgent;
         std::string Connection;
         std::string ContentType;
-        std::string Host;
+        std::string VirtualHost;
         std::string Body;
         std::unordered_map<std::string, std::string> GET;
         std::unordered_map<std::string, std::string> POST;
@@ -160,7 +161,7 @@ namespace hussar {
                 if (line.rfind("User-Agent: ", 0) != std::string::npos) {
                     this->UserAgent = this->extractHeaderContent(line);
                 } else if (line.rfind("Host: ", 0) != std::string::npos) {
-                    this->Host = this->extractHeaderContent(line);
+                    this->VirtualHost = this->extractHeaderContent(line);
                 } else if (line.rfind("Connection: ", 0) != std::string::npos) {
                     this->Connection = this->extractHeaderContent(line);
                 } else if (line.rfind("Content-Type: ", 0) != std::string::npos) {
@@ -246,8 +247,8 @@ namespace hussar {
         /**
          * populates the Request class data members with request data
          */
-        Request(const std::string& request)
-            : isRequestGood(true), KeepAlive(false)
+        Request(const std::string& request, std::string host)
+            : isGood(true), KeepAlive(false), RemoteHost(host)
         {
         // dump the plaintext request if compiled in debug mode
 #ifdef DEBUG
@@ -260,7 +261,7 @@ namespace hussar {
             SplitString(request, '\n', reqVec);
         
             if (reqVec.size() < 1) {
-                this->isRequestGood = false;
+                this->isGood = false;
                 return;
             }
         
@@ -270,7 +271,7 @@ namespace hussar {
                 
             // invalid request line
             if (requestLine.size() != 3) {
-                this->isRequestGood = false;
+                this->isGood = false;
                 return;
             }
         
@@ -284,7 +285,7 @@ namespace hussar {
         
             // validate request line
             if (not this->validateRequestLine(requestLine)){
-                this->isRequestGood = false;
+                this->isGood = false;
                 return;
             }
         

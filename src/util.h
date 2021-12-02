@@ -7,6 +7,8 @@
 #include <vector>
 #include <mutex>
 
+#define SERVER_NAME "hussar"
+
 namespace hussar {
     std::mutex PrintMut;
     std::unique_lock<std::mutex> PrintLock(PrintMut);

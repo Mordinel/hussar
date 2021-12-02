@@ -3,8 +3,8 @@
 
 #include "pch.h"
 #include "request.h"
+#include "response.h"
 
-#define SERVER_NAME "hussar"
 #define SOCKET_MAXTIME 30
 namespace hussar {
     class Hussar {
@@ -12,7 +12,7 @@ namespace hussar {
 
         int sockfd;                     // Server socket
         sockaddr_in clientAddress;      // client addr struct
-    
+
         std::string host;
         unsigned short port;
         std::string docRoot;
@@ -35,8 +35,7 @@ namespace hussar {
         };
         ThreadPool threadpool;
         bool verbose;
-    
-  
+
         /**
          * handles a single client connection
          */
@@ -82,15 +81,17 @@ namespace hussar {
                         goto srv_disconnect; // disconnect
                         break;
                     default:
-        
-                        std::string bufStr(buf);
-                        Request r(bufStr);
-        
-                        std::string response = this->handleRequest(r, client, host);
+                        std::string bufStr{buf};
+                        Request req{bufStr, host};
+                        Response resp{req};
+ 
+                        this->handleRequest(req, resp);
+
+                        std::string response = resp.Serialize();
                         send(client, response.c_str(), response.size(), 0);
 
                         // if keep alive
-                        if (r.KeepAlive) {
+                        if (req.KeepAlive) {
                             continue;
                         }
 
@@ -98,7 +99,7 @@ namespace hussar {
                         break;
                 }
             }
-        
+
         srv_disconnect:
         #ifdef DEBUG
             PrintLock.lock();
@@ -112,47 +113,33 @@ namespace hussar {
         /**
          * performs request parsing and response
          */
-        std::string handleRequest(Request& req, int client, char* host)
+        void handleRequest(Request& req, Response& resp)
         {
             std::vector<std::string> docInfo;
-            std::string body;
-            std::string mime;
-            std::string http;
-            std::string status;
         
-            if (req.isRequestGood) {
+            if (req.isGood) {
                 this->serveDoc(req.Document, this->docRoot, docInfo);
         
-                body = docInfo[0];
-                mime = docInfo[1];
-                http = docInfo[2];
+                resp.body = docInfo[0];
+                resp.Headers["Content-Type"] = docInfo[1];
+                resp.code = docInfo[2];
         
                 // add more statuses later
-                if (http == "200") {
-                    status = "OK";
-                } else if (http == "404") {
-                    status = "NOT FOUND";
-                    mime = "text/html";
-                } else if (http == "414") {
-                    status = "URI TOO LONG";
+                if (resp.code== "200") {
+                    resp.status = "OK";
+                } else if (resp.code== "404") {
+                    resp.status = "NOT FOUND";
+                    resp.Headers["Content-Type"] = "text/html";
+                } else if (resp.code== "414") {
+                    resp.status = "URI TOO LONG";
                 }
             } else {
-                body = "<h1>400: Bad Request!</h1>";
-                mime = "text/html";
-                http = "400";
-                status = "BAD REQUEST";
+                resp.body = "<h1>400: Bad Request!</h1>";
+                resp.code= "400";
+                resp.status = "BAD REQUEST";
+                resp.Headers["Content-Type"] = "text/html";
             }
         
-            // get local time
-            auto now = std::chrono::system_clock::now();
-            auto time = std::chrono::system_clock::to_time_t(now);
-            auto localTime = *std::localtime(&time);
-            
-            // format date for http output
-            std::stringstream dateStream;
-            dateStream << std::put_time(&localTime, "%a, %d %b %Y %H:%M:%S");
-            std::string date = dateStream.str();
-            
             // prints the GET and POST request parameters in debug mode
 #ifdef DEBUG
             PrintLock.lock();
@@ -169,34 +156,13 @@ namespace hussar {
             if (this->verbose) {
                 PrintLock.lock();
                 if (req.UserAgent.size()) {
-                    std::cout << host << "\t" << date << "\t" << StripString(req.Method) << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\t" << StripString(req.UserAgent) << "\n";
+                    std::cout << req.RemoteHost << "\t" << resp.Headers["Date"] << "\t" << StripString(req.Method) << "\t" << resp.code << "\t" << StripString(req.DocumentOriginal) << "\t" << StripString(req.UserAgent) << "\n";
                 } else {
-                    std::cout << host << "\t" << date << "\t" << StripString(req.Method) << "\t" << http << "\t" << StripString(req.DocumentOriginal) << "\n";
+                    std::cout << req.RemoteHost << "\t" << resp.Headers["Date"] << "\t" << StripString(req.Method) << "\t" << resp.code << "\t" << StripString(req.DocumentOriginal) << "\n";
                 }
 
                 PrintLock.unlock();
             }
-            
-            std::string connection(req.KeepAlive ? "keep-alive" : "close");
-            
-            // build response payload to return to client
-            std::stringstream responseStream;
-            responseStream << "HTTP/1.1 " << http << " " << status << "\n";
-            responseStream << "Date: " << date << "\n";
-            responseStream << "Server: " << SERVER_NAME << "\n";
-            if (req.Method != "HEAD") {
-                responseStream << "Content-Length: " << body.size() << "\n";
-                responseStream << "Content-Type: " << mime << "\n";
-            } else {
-                responseStream << "Content-Length: 0\n";
-            }
-            responseStream << "Connection: " << connection << "\n";
-            responseStream << "\n";
-            if (req.Method != "HEAD") {
-                responseStream << body;
-            }
-            
-            return responseStream.str();
         }
 
         /**
@@ -294,7 +260,7 @@ namespace hussar {
             if (mimeIter == this->mimes.end()) {
                 return &this->mimes.begin()->second;
             }
-        
+
             return &mimeIter->second;
         }
 
