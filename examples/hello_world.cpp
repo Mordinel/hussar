@@ -14,7 +14,7 @@ void hello_world(hus::Request& req, hus::Response& resp)
 void welcome(hus::Request& req, hus::Response& resp)
 {
     resp.body = R"(
-        <h1>Welcome a new world!</h1>
+        <h1>Welcome to a new world!</h1>
         <p>Click <a href="/hello">HERE</a> to go to the hello world, or fill in and submit the form below</p><br>
         <form action="/hello">
         <label for="name">Enter your name: </label>
