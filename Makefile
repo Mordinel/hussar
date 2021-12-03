@@ -12,8 +12,7 @@ CFLAGS_DEBUG := -std=c++20 -Wall -Og -pthread -I ./include/ -g -D DEBUG
 EXE          := hussar
 EXE_ARGS     := -d docroot -v
 
-.PHONY: release debug run clean
-
+.PHONY: release debug run clean example
 
 # make cli options
 release: $(PCH_SOURCE).pch $(EXE)
@@ -24,7 +23,10 @@ run:
 	if [ -f $(EXE)-debug ]; then ./$(EXE)-debug $(EXE_ARGS); elif [ -f $(EXE) ]; then ./$(EXE) $(EXE_ARGS); fi
 
 clean:
-	rm -f $(EXE) $(PCH_SOURCE).pch $(EXE)-debug $(PCH_SOURCE)-debug.pch
+	rm -f $(EXE) $(PCH_SOURCE).pch $(EXE)-debug $(PCH_SOURCE)-debug.pch hello_world
+
+example:
+	$(CC) $(CFLAGS) -I ./src/ ./examples/hello_world.cpp -o hello_world
 
 # release
 $(PCH_SOURCE).pch: $(PCH_SOURCE)

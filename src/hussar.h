@@ -24,13 +24,7 @@ namespace hussar {
         /**
          * handles a single client connection
          */
-        void handleConnection(int client, int timeout) {
-        #ifdef DEBUG
-            PrintLock.lock();
-                std::cout << "Connection opened.\n";
-            PrintLock.unlock();
-        #endif
-
+        void handleConnection(int client) {
             // allocate stack buffers for host and service strings
             char host[NI_MAXHOST];
             char svc[NI_MAXSERV];
@@ -43,6 +37,10 @@ namespace hussar {
         
             // allocate a stack buffer for recieved data
             char buf[4096];
+
+            PrintLock.lock();
+                std::cout << host <<" connected\n";
+            PrintLock.unlock();
 
             // read and handle bytes until the connection ends
             while (true) {
@@ -60,9 +58,6 @@ namespace hussar {
                         goto srv_disconnect; // disconnect
                         break;
                     case 0: // client disconnected
-                        PrintLock.lock();
-                            std::cout << host << " disconnected" << std::endl;
-                        PrintLock.unlock();
                         goto srv_disconnect; // disconnect
                         break;
                     default:
@@ -94,11 +89,9 @@ namespace hussar {
             }
 
         srv_disconnect:
-        #ifdef DEBUG
             PrintLock.lock();
-                std::cout << "Connection closed.\n";
+                std::cout << host << " disconnected" << std::endl;
             PrintLock.unlock();
-        #endif
 
             close(client);
         }
@@ -161,7 +154,7 @@ namespace hussar {
                         std::cerr << "ERROR problem with client connection" << std::endl;
                     PrintLock.unlock();
                 } else {
-                    this->threadpool.Dispatch(&Hussar::handleConnection, this, clientSocket, SOCKET_MAXTIME);
+                    this->threadpool.Dispatch(&Hussar::handleConnection, this, clientSocket);
                 }
             }
         }
