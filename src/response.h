@@ -5,6 +5,41 @@
 #include "request.h"
 
 namespace hussar {
+    std::unordered_map<std::string, std::string> statuses = {
+        { "200", "OK" },
+        { "201", "CREATED" },
+        { "202", "ACCEPTED" },
+        { "204", "NO CONTENT" },
+        { "300", "MULTIPLE CHOICES" },
+        { "301", "MOVED PERMANENTLY" },
+        { "302", "FOUND" },
+        { "303", "SEE OTHER" },
+        { "304", "NOT MODIFIED" },
+        { "305", "USE PROXY" },
+        { "307", "TEMPORARY REDIRECT" },
+        { "308", "PERMANENT REDIRECT" },
+        { "400", "BAD REQUEST" },
+        { "401", "UNAUTHORIZED" },
+        { "402", "PAYMENT REQUIRED" },
+        { "403", "FORBIDDEN" },
+        { "404", "NOT FOUND" },
+        { "408", "REQUEST TIMEOUT" },
+        { "410", "GONE" },
+        { "411", "LENGTH REQUIRED" },
+        { "412", "PRECONDITION FAILED" },
+        { "413", "PAYLOAD TOO LARGE" },
+        { "414", "URI TOO LONG" },
+        { "415", "UNSUPPORTED MEDIA TYPE" },
+        { "418", "I AM A TEAPOT" },
+        { "426", "UPGRADE REQUIRED" },
+        { "429", "TOO MANY REQUESTS" },
+        { "451", "UNAVAILABLE FOR LEGAL REASONS" },
+        { "500", "INTERNAL SERVER ERROR" },
+        { "501", "NOT IMPLEMENTED" },
+        { "502", "BAD GATEWAY" },
+        { "503", "SERVICE UNAVAILABLE" },
+    };
+
     class Response {
     private:
         std::string requestMethod;
@@ -35,13 +70,25 @@ namespace hussar {
             this->Headers["Content-Type"] = "text/html";
         }
 
+        // transform field data into an HTTP response
         std::string Serialize()
         {
             std::ostringstream responseStream;
             std::ostringstream bodyLengthStream;
 
-            responseStream << this->proto << " " << this->code << " " << this->status << "\n";
+            // code status texts
+            if (statuses.find(this->code) != statuses.end()) {
+                responseStream << this->proto << " " << this->code << " " << statuses[this->code] << "\n";
+            } else if (this->status != "") {
+                responseStream << this->proto << " " << this->code << " " << this->status << "\n";
+            } else { // code not implemented and custom status is empty
+                this->code = "500";
+                responseStream << this->proto << " " << this->code << " " << statuses[this->code] << "\n";
+                this->Headers["Content-Type"] = "text/html";
+                this->body = "<h1>500: " + statuses[this->code] + "</h1>";
+            }
 
+            // content length header
             if (requestMethod != "HEAD") {
                 bodyLengthStream << body.size();
                 this->Headers["Content-Length"] = bodyLengthStream.str();
@@ -50,6 +97,7 @@ namespace hussar {
                 this->Headers["Content-Length"] = bodyLengthStream.str();
             }
 
+            // stored headers
             for (auto& [key, data] : this->Headers) {
                 if (key != "") {
                     responseStream << key << ": " << data << "\n";
@@ -61,6 +109,7 @@ namespace hussar {
             if (requestMethod != "HEAD") {
                 responseStream << this->body;
             }
+
             return responseStream.str();
         }
     };

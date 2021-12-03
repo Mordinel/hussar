@@ -88,12 +88,12 @@ namespace hussar {
     /**
      * returns a string containing the mime time of the extension of the document string.
      */
-    std::string* GetMime(std::string& document) {
-        std::size_t l = document.find_last_of('.');
+    std::string GetMime(std::string& document) {
+        size_t l = document.find_last_of('.');
     
         // if no char found
         if (l == std::string::npos) {
-            return &mimes.begin()->second; // default to 1st item (text file)
+            return mimes.begin()->second; // default to 1st item (text file)
         }
     
         // create a string of the extension
@@ -103,10 +103,10 @@ namespace hussar {
         auto mimeIter = mimes.find(extension);
     
         if (mimeIter == mimes.end()) {
-            return &mimes.begin()->second;
+            return mimes.begin()->second;
         }
 
-        return &mimeIter->second;
+        return mimeIter->second;
     }
 
     
