@@ -32,6 +32,7 @@ namespace hussar {
             this->Headers["Date"] = date;
             this->Headers["Server"] = SERVER_NAME;
             this->Headers["Connection"] = req.KeepAlive ? "keep-alive" : "close";
+            this->Headers["Content-Type"] = "text/html";
         }
 
         std::string Serialize()

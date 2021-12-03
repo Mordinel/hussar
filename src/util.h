@@ -1,6 +1,7 @@
 #ifndef HUSSAR_UTIL_H
 #define HUSSAR_UTIL_H
 
+#include <unordered_map>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -9,9 +10,29 @@
 
 #define SERVER_NAME "hussar"
 
+#define hus hussar
+
 namespace hussar {
     std::mutex PrintMut;
     std::unique_lock<std::mutex> PrintLock(PrintMut);
+    std::unordered_map<std::string, std::string> mimes = {
+        {"woff", "font/woff"},
+        {"woff2", "font/woff2"},
+        {"js", "application/javascript"},
+        {"ttf", "application/octet-stream"},
+        {"otf", "application/octet-stream"},
+        {"exe", "application/octet-stream"},
+        {"pdf", "application/pdf"},
+        {"zip", "application/zip"},
+        {"ico", "image/x-icon"},
+        {"gif", "image/gif"},
+        {"png", "image/png"},
+        {"jpg", "image/jpeg"},
+        {"css", "text/css"},
+        {"html", "text/html"},
+        {"txt", "text/plain"}
+    };
+
 
     /**
      * performs url decoding on str
@@ -63,6 +84,31 @@ namespace hussar {
     
         return oss.str();
     }
+
+    /**
+     * returns a string containing the mime time of the extension of the document string.
+     */
+    std::string* GetMime(std::string& document) {
+        std::size_t l = document.find_last_of('.');
+    
+        // if no char found
+        if (l == std::string::npos) {
+            return &mimes.begin()->second; // default to 1st item (text file)
+        }
+    
+        // create a string of the extension
+        std::string extension(document.begin() + l + 1, document.end());
+    
+        // find extension in mimes
+        auto mimeIter = mimes.find(extension);
+    
+        if (mimeIter == mimes.end()) {
+            return &mimes.begin()->second;
+        }
+
+        return &mimeIter->second;
+    }
+
     
     /**
      * splits the string str into vector strVec, delimited by char c
