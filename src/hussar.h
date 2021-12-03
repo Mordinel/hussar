@@ -6,7 +6,6 @@
 #include "response.h"
 #include "router.h"
 
-#define SOCKET_MAXTIME 30
 namespace hussar {
     class Hussar {
     private:
