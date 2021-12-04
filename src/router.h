@@ -33,6 +33,25 @@ namespace hussar {
             this->registerDefault();
         }
 
+        void Route(Request& req, Response& resp)
+        {
+            if (req.isGood) {
+                if (req.Method == "GET") {
+                    this->GET(req, resp);
+                } else if (req.Method == "HEAD") {
+                    this->HEAD(req, resp);
+                } else if (req.Method == "POST") {
+                    this->POST(req, resp);
+                } else {
+                    this->DEFAULT(req, resp);
+                }
+            } else {
+                resp.Headers["Content-Type"] = "text/html";
+                resp.code = "400";
+                resp.body = "<h1>400: Bad Request</h1>";
+            }
+        }
+
         // register GET route
         void GET(const std::string& route, void (*func)(Request& req, Response& resp))
         {

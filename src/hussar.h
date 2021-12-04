@@ -72,15 +72,7 @@ namespace hussar {
                         Request req{bufStr, host};
                         Response resp{req};
  
-                        if (req.Method == "GET") {
-                            this->Router.GET(req, resp);
-                        } else if (req.Method == "HEAD") {
-                            this->Router.HEAD(req, resp);
-                        } else if (req.Method == "POST") {
-                            this->Router.POST(req, resp);
-                        } else {
-                            this->Router.DEFAULT(req, resp);
-                        }
+                        this->Router.Route(req, resp);
 
                         std::string response = resp.Serialize();
                         send(client, response.c_str(), response.size(), 0);
@@ -152,15 +144,7 @@ namespace hussar {
                         Request req{bufStr, host};
                         Response resp{req};
  
-                        if (req.Method == "GET") {
-                            this->Router.GET(req, resp);
-                        } else if (req.Method == "HEAD") {
-                            this->Router.HEAD(req, resp);
-                        } else if (req.Method == "POST") {
-                            this->Router.POST(req, resp);
-                        } else {
-                            this->Router.DEFAULT(req, resp);
-                        }
+                        this->Router.Route(req, resp);
 
                         std::string response = resp.Serialize();
                         SSL_write(ssl, response.c_str(), response.size());
