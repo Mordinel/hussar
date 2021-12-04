@@ -24,7 +24,7 @@ void welcome(hus::Request& req, hus::Response& resp)
 
 int main()
 {
-    hus::Hussar h("127.0.0.2", 8080, 0, true);
+    hus::Hussar h("127.0.0.2", 8443, 0, "key.pem", "cert.pem", true);
 
     h.Router.DEFAULT(&welcome);
     h.Router.GET("/hello", &hello_world);

@@ -16,6 +16,8 @@ void printHelp(char* arg0)
     std::cout << "\t-p <PORT>\tPort to listen on\n";
     std::cout << "\t-t <THREAD>\tThreads to use\n";
     std::cout << "\t-d <DIR>\tDocument root directory\n";
+    std::cout << "\t-k <key.pem>\tSSL Private key\n";
+    std::cout << "\t-c <cert.pem>\tSSL Certificate\n";
 }
 
 void web_server(hus::Request& req, hus::Response& resp)
@@ -87,29 +89,26 @@ void web_server(hus::Request& req, hus::Response& resp)
         resp.body = "<h1>400: Bad Request!</h1>";
     }
 
-    // prints the GET and POST request parameters in debug mode
-#ifdef DEBUG
-    hus::PrintLock.lock();
-    std::cout << "\n";
-    for (auto& p : req.GET) {
-        std::cout << "GET[" << hus::StripString(p.first) << "] = " << hus::StripString(p.second) << "\n";
-    }
-    for (auto& p : req.POST) {
-        std::cout << "POST[" << hus::StripString(p.first) << "] = " << hus::StripString(p.second) << "\n";
-    }
-    hus::PrintLock.unlock();
-#endif
-
+    // prints the GET and POST request parameters in verbose mode
     if (VERBOSE) {
         hus::PrintLock.lock();
-        if (req.UserAgent.size()) {
-            std::cout << req.RemoteHost << "\t" << resp.Headers["Date"] << "\t" << hus::StripString(req.Method) << "\t" << resp.code << "\t" << hus::StripString(req.DocumentOriginal) << "\t" << hus::StripString(req.UserAgent) << "\n";
-        } else {
-            std::cout << req.RemoteHost << "\t" << resp.Headers["Date"] << "\t" << hus::StripString(req.Method) << "\t" << resp.code << "\t" << hus::StripString(req.DocumentOriginal) << "\n";
+        for (auto& p : req.GET) {
+            std::cout << "GET[" << hus::StripString(p.first) << "] = " << hus::StripString(p.second) << "\n";
         }
-
+        for (auto& p : req.POST) {
+            std::cout << "POST[" << hus::StripString(p.first) << "] = " << hus::StripString(p.second) << "\n";
+        }
         hus::PrintLock.unlock();
     }
+
+    // logging
+    hus::PrintLock.lock();
+    if (req.UserAgent.size()) {
+        std::cout << req.RemoteHost << "\t" << resp.Headers["Date"] << "\t" << hus::StripString(req.Method) << "\t" << resp.code << "\t" << hus::StripString(req.DocumentOriginal) << "\t" << hus::StripString(req.UserAgent) << "\n";
+    } else {
+        std::cout << req.RemoteHost << "\t" << resp.Headers["Date"] << "\t" << hus::StripString(req.Method) << "\t" << resp.code << "\t" << hus::StripString(req.DocumentOriginal) << "\n";
+    }
+    hus::PrintLock.unlock();
 }
 
 int main(int argc, char* argv[])
@@ -117,11 +116,13 @@ int main(int argc, char* argv[])
     std::string host = "127.0.0.1";
     unsigned short port = 8080;
     unsigned int threads = 0; // 0 defaults to max hardware threads
+    std::string privkey = "";
+    std::string certificate = "";
 
     std::stringstream ss;
 
     int c;
-    while ((c = getopt(argc, argv, "hvi:p:t:d:")) != -1) {
+    while ((c = getopt(argc, argv, "hvi:p:t:d:k:c:")) != -1) {
         switch (c) {
 
             case 'h':
@@ -156,15 +157,35 @@ int main(int argc, char* argv[])
                 }
                 break;
  
+            case 'k':
+                privkey = optarg;
+                break;
+
+            case 'c':
+                certificate = optarg;
+                break;
+
             case 'd':
                 DOCROOT = optarg;
                 break;
        }
     }
 
-    hus::Hussar server(host, port, threads, VERBOSE);
-    server.Router.DEFAULT(&web_server);
-    server.Listen();
+    hus::Hussar* server;
+
+    if (
+        privkey != "" && certificate != "" &&
+        std::filesystem::exists(privkey) && std::filesystem::exists(certificate) &&
+        std::filesystem::is_regular_file(privkey) && std::filesystem::is_regular_file(certificate)
+    ) {
+        server = new hus::Hussar(host, port, threads, privkey, certificate, VERBOSE);
+    } else {
+        server = new hus::Hussar(host, port, threads, VERBOSE);
+    }
+
+    server->Router.DEFAULT(&web_server);
+
+    server->Listen();
 
     return 0;
 }

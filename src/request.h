@@ -250,12 +250,6 @@ namespace hussar {
         Request(const std::string& request, std::string host)
             : isGood(true), KeepAlive(false), RemoteHost(host)
         {
-        // dump the plaintext request if compiled in debug mode
-#ifdef DEBUG
-            PrintLock.lock();
-                std::cout << request << "\n";
-            PrintLock.unlock();
-#endif
             // split into lines
             std::vector<std::string> reqVec;
             SplitString(request, '\n', reqVec);

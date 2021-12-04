@@ -2,15 +2,17 @@
 #define HUSSAR_PCH_H
 
 // c includes
-#include <cstdlib>      // exit
-#include <netdb.h>      // getnameinfo
-#include <unistd.h>     // close
-#include <string.h>     // memset
-#include <signal.h>     // sigs
-#include <arpa/inet.h>  // htons
-#include <sys/types.h>  // compatibility reasons
+#include <cstdlib>       // exit
+#include <netdb.h>       // getnameinfo
+#include <unistd.h>      // close
+#include <string.h>      // memset
+#include <signal.h>      // sigs
+#include <arpa/inet.h>   // htons
+#include <sys/types.h>   // compatibility reasons
 #include <netinet/in.h>
-#include <sys/socket.h> // sockets
+#include <sys/socket.h>  // sockets
+#include <openssl/ssl.h> // openssl
+#include <openssl/err.h>
 
 // cpp includes
 #include <filesystem>       // file reading
