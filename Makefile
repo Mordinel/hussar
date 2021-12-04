@@ -5,43 +5,26 @@ PCH_SOURCE   := src/pch.h
 
 # compiler flags
 CC           := clang++
-CFLAGS       := -std=c++20 -Wall -O2 -pthread -I ./include/
-CFLAGS_DEBUG := -std=c++20 -Wall -Og -pthread -I ./include/ -g -D DEBUG
+CFLAGS       := -std=c++20 -Wall -O2 -pthread -lcrypto -lssl -I ./include/
 
 # executable
 EXE          := hussar
 EXE_ARGS     := -d docroot -v
 
-.PHONY: release debug run clean example
+.PHONY: release run clean example certs
 
 # make cli options
-release: $(PCH_SOURCE).pch $(EXE)
-
-debug: $(PCH_SOURCE)-debug.pch $(EXE)-debug
+release:
+	$(CC) $(CFLAGS) $(SOURCES) -o $(EXE)
 
 run:
-	if [ -f $(EXE)-debug ]; then ./$(EXE)-debug $(EXE_ARGS); elif [ -f $(EXE) ]; then ./$(EXE) $(EXE_ARGS); fi
+	./$(EXE) $(EXE_ARGS)
 
 clean:
-	rm -f $(EXE) $(PCH_SOURCE).pch $(EXE)-debug $(PCH_SOURCE)-debug.pch hello_world
+	rm -f $(EXE) hello_world
 
 example:
 	$(CC) $(CFLAGS) -I ./src/ ./examples/hello_world.cpp -o hello_world
 
-# release
-$(PCH_SOURCE).pch: $(PCH_SOURCE)
-	if [ -f $(PCH_SOURCE)-debug.pch ]; then rm -f $(PCH_SOURCE)-debug.pch; fi
-	$(CC) $(CFLAGS) -x c++-header $(PCH_SOURCE) -o $(PCH_SOURCE).pch
-
-$(EXE): $(SOURCES) $(HEADERS)
-	if [ -f $(EXE)-debug ]; then rm -f $(EXE)-debug; fi
-	$(CC) $(CFLAGS) -include-pch $(PCH_SOURCE).pch $(SOURCES) -o $(EXE)
-
-# debug
-$(PCH_SOURCE)-debug.pch: $(PCH_SOURCE)
-	if [ -f $(PCH_SOURCE).pch ]; then rm -f $(PCH_SOURCE).pch; fi
-	$(CC) $(CFLAGS_DEBUG) -x c++-header $(PCH_SOURCE) -o $(PCH_SOURCE)-debug.pch
-
-$(EXE)-debug: $(SOURCES) $(HEADERS)
-	if [ -f $(EXE) ]; then rm -f $(EXE); fi
-	$(CC) $(CFLAGS_DEBUG) -include-pch $(PCH_SOURCE)-debug.pch $(SOURCES) -o $(EXE)-debug
+certs:
+	openssl req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 9 -out cert.pem
