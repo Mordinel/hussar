@@ -2,12 +2,10 @@
 
 void hello_world(hus::Request& req, hus::Response& resp)
 {
-    resp.Headers["Content-Type"] = "text/plain";
-
     if (req.GET.find("name") != req.GET.end()) {
-        resp.body = "Hello, " + req.GET["name"] + "!\n";
+        resp.body = "<h2>Hello, " + hus::HtmlEscape(req.GET["name"]) + "!</h2>";
     } else {
-        resp.body = "Hello, World!\n";
+        resp.body = "<h2>Hello, World!</h2>";
     }
 }
 

@@ -44,7 +44,7 @@ namespace hussar {
         for (size_t i = 0; i < str.size(); ++i) {
             if (str[i] == '%') {
                 i++;
-                std::string code(str.substr(i, 2));
+                std::string code{str.substr(i, 2)};
                 c = static_cast<char>(std::strtol(code.c_str(), NULL, 16));
                 if (c) oss << c;
                 i++;
@@ -57,6 +57,41 @@ namespace hussar {
         return oss.str();
     }
     
+    /**
+     * performs html escaping on str
+     */
+    std::string HtmlEscape(const std::string& str)
+    {
+        std::ostringstream oss;
+        for (size_t i = 0; i < str.size(); ++i) {
+            switch (str[i]) {
+                default:
+                    oss << str[i];
+                    break;
+                case '&':
+                    oss << "&amp;";
+                    break;
+                case '<':
+                    oss << "&lt;";
+                    break;
+                case '>':
+                    oss << "&gt;";
+                    break;
+                case '"':
+                    oss << "&#34;";
+                    break;
+                case '\'':
+                    oss << "&#39;";
+                    break;
+                case ';':
+                    oss << "&#59;";
+                    break;
+            }
+        }
+
+        return oss.str();
+    }
+
     /**
      * strips terminal control chars from a string
      */
