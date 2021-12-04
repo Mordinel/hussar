@@ -9,7 +9,7 @@ bool VERBOSE = false;
 
 void printHelp(char* arg0)
 {
-    std::cout << "Usage: " << arg0 << " [-hv -i <ipv4> -p <port> -t <thread count> -d <document root>]\n";
+    std::cout << "Usage: " << arg0 << " [-hv -i <ipv4> -p <port> -t <thread count> -d <document root> -k <ssl private key> -c <ssl certificate>]\n";
     std::cout << "\t-h\t\tDisplay this help\n";
     std::cout << "\t-v\t\tVerbose console output\n";
     std::cout << "\t-i <IPV4>\tIpv4 to bind to\n";
