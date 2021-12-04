@@ -5,13 +5,13 @@ The default configuration can be changed in [main.cpp](./src/main.cpp)
 
 [Here](./examples/hello_world.cpp) is an example of usage in your own code
 
-## building
+## building the file web server
 
     git clone https://github.com/SOROM2/hussar.git --recurse-submodules
     cd hussar
     make
-   
-## running
+
+## running as a file web server
 
     ./hussar -h
     Usage: ./hussar [-hv -i <ipv4> -p <port> -t <thread count> -d <document root>]
@@ -21,3 +21,14 @@ The default configuration can be changed in [main.cpp](./src/main.cpp)
             -p <PORT>       Port to listen on
             -t <THREAD>     Threads to use
             -d <DIR>        Document root directory
+
+## building the example
+
+    git clone https://github.com/SOROM2/hussar.git --recurse-submodules
+    cd hussar
+    make example
+
+## running the example
+
+    ./hello_world
+
