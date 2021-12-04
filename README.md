@@ -14,13 +14,15 @@ The default configuration can be changed in [main.cpp](./src/main.cpp)
 ## running as a file web server
 
     ./hussar -h
-    Usage: ./hussar [-hv -i <ipv4> -p <port> -t <thread count> -d <document root>]
+    Usage: ./hussar [-hv -i <ipv4> -p <port> -t <thread count> -d <document root> -k <ssl private key> -c <ssl certificate>]
             -h              Display this help
             -v              Verbose console output
             -i <IPV4>       Ipv4 to bind to
             -p <PORT>       Port to listen on
             -t <THREAD>     Threads to use
             -d <DIR>        Document root directory
+            -k <key.pem>    SSL Private key
+            -c <cert.pem>   SSL Certificate
 
 ## building the example
 
