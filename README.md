@@ -29,6 +29,7 @@ The default configuration can be changed in [main.cpp](./src/main.cpp)
     git clone https://github.com/SOROM2/hussar.git --recurse-submodules
     cd hussar
     make example
+    make certs
 
 ## running the example
 
