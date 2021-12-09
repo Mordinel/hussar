@@ -184,8 +184,9 @@ int main(int argc, char* argv[])
     }
 
     server->Router.DEFAULT(&web_server);
-
     server->Listen();
+
+    delete server;
 
     return 0;
 }
