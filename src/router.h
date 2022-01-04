@@ -20,18 +20,9 @@ namespace hussar {
         std::unordered_map<std::string, void (*)(Request&, Response&)> post;
 
     public:
-        void registerDefault()
-        {
-            this->get["/"]  = this->fallback;
-            this->head["/"] = this->fallback;
-            this->post["/"] = this->fallback;
-        }
-
         Router()
             : fallback(&not_implemented)
-        {
-            this->registerDefault();
-        }
+        {}
 
         void Route(Request& req, Response& resp)
         {
@@ -110,7 +101,6 @@ namespace hussar {
         void DEFAULT(void (*func)(Request& req, Response& resp))
         {
             this->fallback = func;
-            this->registerDefault();
         }
 
         // call DEFAULT route
