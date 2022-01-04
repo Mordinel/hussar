@@ -233,7 +233,7 @@ namespace hussar {
          */
         std::unordered_map<std::string, Cookie> getCookies(const std::string& cookieString)
         {
-            std::vector<Cookie> cookie_vec = ParseCookies(cookieString);
+            std::vector<Cookie> cookie_vec = DeserializeCookies(cookieString);
             std::unordered_map<std::string, Cookie> cookie_map;
             for (Cookie& cookie : cookie_vec) {
                 if (cookie.name != "" && cookie.value != "") {

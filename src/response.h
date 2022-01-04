@@ -46,6 +46,7 @@ namespace hussar {
 
     public:
         std::unordered_map<std::string, std::string> Headers;
+        std::vector<Cookie> Cookies;
         std::string proto;
         std::string code;
         std::string status;
@@ -88,20 +89,25 @@ namespace hussar {
                 this->body = "<h1>500: " + statuses[this->code] + "</h1>";
             }
 
-            // content length header
-            if (requestMethod != "HEAD") {
-                bodyLengthStream << body.size();
-                this->Headers["Content-Length"] = bodyLengthStream.str();
-            } else {
-                bodyLengthStream << 0;
-                this->Headers["Content-Length"] = bodyLengthStream.str();
-            }
-
             // stored headers
             for (auto& [key, data] : this->Headers) {
                 if (key != "") {
                     responseStream << key << ": " << data << "\n";
                 }
+            }
+
+            // set cookie headers
+            for (Cookie& cookie : this->Cookies) {
+                if (cookie.IsValid()) {
+                    responseStream << "Set-Cookie: " << cookie.Serialize() << "\n";
+                }
+            }
+
+            // content length header
+            if (requestMethod != "HEAD") {
+                responseStream << "Content-Length: " << body.size() << "\n";
+            } else {
+                responseStream << "Content-Length: 0\n";
             }
 
             responseStream << "\n";

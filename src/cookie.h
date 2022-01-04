@@ -25,12 +25,117 @@ namespace hussar {
             : name(""), value(""), Secure(false), HttpOnly(false), SameSite(samesite::UNDEFINED), Domain(""), Path(""), MaxAge(-1)
         {}
 
-        Cookie(const std::string& name, const std::string& value)
-            : name(name), value(value), Secure(false), HttpOnly(false), SameSite(samesite::UNDEFINED), Domain(""), Path(""), MaxAge(-1)
-        {}
+        /**
+         * returns true if the cookie is valid
+         */
+        bool IsValid()
+        {
+            if (not ValidateParamName(StripString(this->name))) {
+                return false;
+            }
+
+            if (not StripString(this->value).size()) {
+                return false;
+            }
+
+            return true;
+        }
+
+        /**
+         * returns the cookie in its http string representation
+         */
+        std::string Serialize()
+        {
+            std::ostringstream oss;
+
+            // check if cookie is valid
+            if (not this->IsValid()) {
+                return "";
+            }
+
+            std::string name_stripped = StripString(this->name);
+            std::string value_stripped = StripString(this->value);
+            oss << name_stripped << "=" << value_stripped;
+
+            std::string domain_stripped = StripString(this->Domain);
+            if (domain_stripped.size()) {
+                oss << "; Domain=" << domain_stripped;
+            }
+            
+            std::string path_stripped = StripString(this->Path);
+            if (path_stripped.size()) {
+                oss << "; Path=" << path_stripped;
+            }
+
+            if (this->SameSite != samesite::UNDEFINED) {
+                oss << "; SameSite=";
+                switch (this->SameSite) {
+                    default: break;
+                    case samesite::NONE:
+                        oss << "None";
+                        break;
+                    case samesite::LAX:
+                        oss << "Lax";
+                        break;
+                    case samesite::STRICT:
+                        oss << "Strict";
+                        break;
+                }
+            }
+
+            if (this->MaxAge > -1) {
+                oss << "; Max-Age=" << this->MaxAge;
+            }
+
+            if (this->Secure) {
+                oss << "; Secure";
+            }
+
+            if (this->HttpOnly) {
+                oss << "; HttpOnly";
+            }
+
+            return oss.str();
+        }
     };
 
-    std::vector<Cookie> ParseCookies(const std::string& cookieStr)
+    /**
+     * Take a vector of Cookie structs and serialize them into HTTP cookie strings
+     */
+    std::string SerializeCookies(std::vector<Cookie>& cookieVec)
+    {
+        std::ostringstream oss;
+        std::string serialized;
+        bool first = true;
+
+        // input has no cookies
+        if (not cookieVec.size()) {
+            return "";
+        }
+
+        // for ever cookie in vec
+        for (Cookie& cookie : cookieVec) {
+            // serialize it
+            serialized = cookie.Serialize();
+            // if the result contains something
+            if (serialized.size()) {
+                // put the serialized cookie into the output buffer
+                if (first) {
+                    oss << serialized;
+                    first = false;
+                } else {
+                    oss << "; " << serialized;
+                }
+            }
+        }
+
+        return oss.str();
+    }
+
+    /**
+     * Take a string containing arbitrary HTTP cookies and parse them into Cookie structs
+     */
+    std::vector<Cookie> DeserializeCookies(const std::string& cookieStr)
     {
         enum {
             C_NAME, C_VALUE, C_SAMESITE, C_DOMAIN, C_PATH, C_EXPIRES, C_MAXAGE
@@ -41,9 +146,11 @@ namespace hussar {
         std::stringstream ss;
         std::string str;
 
+        // state machine parser for http cookie strings
         char c;
         Cookie cookie;
         for (iss >> c ;; iss >> c) {
+            // wrap up parsing
             if (iss.eof()) {
                 switch (state) {
                     default: break;
@@ -103,6 +210,7 @@ namespace hussar {
                 break;
             }
             
+            // consume one char from the http cookie string
             switch (c) {
                 case '=':
                 c_equal:
@@ -167,6 +275,8 @@ namespace hussar {
                     c_default:
                         oss << c;
                         break;
+
+                    // custom case for cookie attributes with parameters
                     c_other:
                         switch (state) {
                             default:
