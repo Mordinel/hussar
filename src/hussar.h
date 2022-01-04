@@ -195,6 +195,11 @@ namespace hussar {
             this->init_ssl_context(cert, privkey);
         }
 
+        // delete copy constructors
+        Hussar(Hussar& h) = delete;
+        Hussar(const Hussar& h) = delete;
+        Hussar& operator=(Hussar& h) = delete;
+        Hussar& operator=(const Hussar& h) = delete;
 
         // closes the server socket
         ~Hussar()

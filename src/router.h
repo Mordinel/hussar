@@ -24,6 +24,12 @@ namespace hussar {
             : fallback(&not_implemented)
         {}
 
+        // delete copy constructors
+        Router(Router& r) = delete;
+        Router(const Router& r) = delete;
+        Router& operator=(Router& r) = delete;
+        Router& operator=(const Router& r) = delete;
+
         void Route(Request& req, Response& resp)
         {
             if (req.isGood) {

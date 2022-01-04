@@ -3,6 +3,7 @@
 
 #include "pch.h"
 #include "cookie.h"
+#include "session.h"
 
 namespace hussar {
     class Request {
@@ -24,6 +25,7 @@ namespace hussar {
         std::string VirtualHost;
         std::string CookieString;
         std::string Body;
+        std::string SessionID;
         std::unordered_map<std::string, std::string> GET;
         std::unordered_map<std::string, std::string> POST;
         std::unordered_map<std::string, Cookie> Cookies;
@@ -305,6 +307,12 @@ namespace hussar {
                 this->parseParams(this->POST, this->PostParameters);
             }
         }
+
+        // delete copy constructors
+        Request(Request& req) = delete;
+        Request(const Request& req) = delete;
+        Request& operator=(Request& req) = delete;
+        Request& operator=(const Request& req) = delete;
     };
 }
 

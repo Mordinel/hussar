@@ -69,7 +69,35 @@ namespace hussar {
             this->Headers["Server"] = SERVER_NAME;
             this->Headers["Connection"] = req.KeepAlive ? "keep-alive" : "close";
             this->Headers["Content-Type"] = "text/html";
+
+            bool update_session = false;
+            // get session id
+            if (req.Cookies.find("id") != req.Cookies.end()) {
+                req.SessionID = req.Cookies["id"].value; 
+                if (not SessionExists(req.SessionID)) {
+                    req.SessionID = NewSession();
+                    update_session = true;
+                }
+            } else {
+                req.SessionID = NewSession();
+                update_session = true;
+            }
+
+            // if new session, create it
+            if (update_session) {
+                this->Cookies.emplace_back(Cookie{});
+                Cookie& c = this->Cookies[this->Cookies.size()-1];
+                c.name = "id";
+                c.value = req.SessionID;
+                c.HttpOnly = true;
+            }
         }
+
+        // delete copy constructors
+        Response(Response& resp) = delete;
+        Response(const Response& resp) = delete;
+        Response& operator=(Response& resp) = delete;
+        Response& operator=(const Response& resp) = delete;
 
         // transform field data into an HTTP response
         std::string Serialize()
