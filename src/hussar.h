@@ -27,18 +27,12 @@ namespace hussar {
         /**
          * handles a single client connection
          */
-        void handleConnection(int client, SSL* ssl) {
-            // allocate stack buffers for host and service strings
-            char host[NI_MAXHOST];
+        void handleConnection(int client, char* host, SSL* ssl) {
+            // allocate buffer for service string
             char svc[NI_MAXSERV];
-        
-            // set all chars to null in each buffer
-            memset(host, 0, NI_MAXHOST);
             memset(svc, 0, NI_MAXSERV);
-            
-            inet_ntop(AF_INET, &this->clientAddress.sin_addr, host, NI_MAXHOST);
         
-            // allocate a stack buffer for recieved data
+            // allocate a buffer for recieved data
             char buf[4096];
 
             if (this->verbose) {
@@ -108,6 +102,7 @@ namespace hussar {
                 SSL_free(ssl);
             }
             close(client);
+            std::free(host);
         }
 
         void init_socket()
@@ -210,9 +205,12 @@ namespace hussar {
         
             while (true) {
                 socklen_t clientSize = sizeof(this->clientAddress);
-        
                 // accept connections
                 int clientSocket = accept(this->sockfd, (sockaddr*)&this->clientAddress, &clientSize);
+
+                // get the host address of the tcp client
+                char* host = (char*)std::calloc(NI_MAXHOST, sizeof(char));
+                inet_ntop(AF_INET, &this->clientAddress.sin_addr, host, NI_MAXHOST);
 
                 if (clientSocket < 0) {
                     if (this->verbose) {
@@ -220,14 +218,15 @@ namespace hussar {
                             std::cerr << "ERROR problem with client connection" << std::endl;
                         PrintLock.unlock();
                     }
+                    std::free(host);
                 } else if (this->ctx) {
                     SSL* ssl = SSL_new(this->ctx);
                     SSL_set_fd(ssl, clientSocket);
                     if (SSL_accept(ssl) > 0) {
-                        this->threadpool.Dispatch(&Hussar::handleConnection, this, clientSocket, ssl);
+                        this->threadpool.Dispatch(&Hussar::handleConnection, this, clientSocket, host, ssl);
                     }
                 } else {
-                    this->threadpool.Dispatch(&Hussar::handleConnection, this, clientSocket, nullptr);
+                    this->threadpool.Dispatch(&Hussar::handleConnection, this, clientSocket, host, nullptr);
                 }
             }
         }
