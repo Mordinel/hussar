@@ -78,10 +78,10 @@ namespace hussar {
                             PrintLock.lock();
                             std::cout << req.RemoteHost <<
                                 "\t" << resp.Headers["Date"] <<
-                                "\t" << hus::StripString(req.Method) <<
+                                "\t" << TerminalString(req.Method) <<
                                 "\t" << resp.code <<
-                                "\t" << hus::StripString(req.DocumentOriginal) <<
-                                "\t" << hus::StripString(req.UserAgent) <<
+                                "\t" << TerminalString(req.DocumentOriginal) <<
+                                "\t" << TerminalString(req.UserAgent) <<
                                 "\n";
                             PrintLock.unlock();
                         }

@@ -93,10 +93,10 @@ void web_server(hus::Request& req, hus::Response& resp)
     if (VERBOSE) {
         hus::PrintLock.lock();
         for (auto& p : req.GET) {
-            std::cout << "GET[" << hus::StripString(p.first) << "] = " << hus::StripString(p.second) << "\n";
+            std::cout << "GET[" << hus::TerminalString(p.first) << "] = " << hus::TerminalString(p.second) << "\n";
         }
         for (auto& p : req.POST) {
-            std::cout << "POST[" << hus::StripString(p.first) << "] = " << hus::StripString(p.second) << "\n";
+            std::cout << "POST[" << hus::TerminalString(p.first) << "] = " << hus::TerminalString(p.second) << "\n";
         }
         hus::PrintLock.unlock();
     }

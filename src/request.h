@@ -2,6 +2,7 @@
 #define HUSSAR_REQUEST_H
 
 #include "pch.h"
+#include "cookie.h"
 
 namespace hussar {
     class Request {
@@ -21,9 +22,11 @@ namespace hussar {
         std::string Connection;
         std::string ContentType;
         std::string VirtualHost;
+        std::string CookieString;
         std::string Body;
         std::unordered_map<std::string, std::string> GET;
         std::unordered_map<std::string, std::string> POST;
+        std::unordered_map<std::string, Cookie> Cookies;
 
     private:
         /**
@@ -42,7 +45,7 @@ namespace hussar {
                 oss << " " << splitLine[n];
             }
         
-            return StripString(oss.str());
+            return TerminalString(oss.str());
         }
     
         /**
@@ -98,7 +101,7 @@ namespace hussar {
                     if (state == PG_VALUE && name.size()) {
                         value = oss.str();
                         if (value.size()) {
-                            if (this->validateParamName(name))
+                            if (ValidateParamName(name))
                                 dest[name] = UrlDecode(value);
                         }
                     }
@@ -124,7 +127,7 @@ namespace hussar {
                             value = oss.str();
                             if (value.size()) {
                                 oss.str("");
-                                if (this->validateParamName(name))
+                                if (ValidateParamName(name))
                                     dest[name] = UrlDecode(value);
                                 state = PG_NAME;
                             } else {
@@ -166,6 +169,8 @@ namespace hussar {
                     this->Connection = this->extractHeaderContent(line);
                 } else if (line.rfind("Content-Type: ", 0) != std::string::npos) {
                     this->ContentType = this->extractHeaderContent(line);
+                } else if (line.rfind("Cookie: ", 0) != std::string::npos) {
+                    this->CookieString = this->extractHeaderContent(line);
                 }
             }
 
@@ -175,7 +180,8 @@ namespace hussar {
         /**
          * extracts the body of the document, assuming lineIdx is the line in reqVec that the body starts on
          */
-        std::string extractBody(std::vector<std::string>& reqVec, size_t index) {
+        std::string extractBody(std::vector<std::string>& reqVec, size_t index)
+        {
             size_t lineIdx = index;
             std::ostringstream oss;
             for (; lineIdx < reqVec.size(); ++lineIdx) {
@@ -223,24 +229,19 @@ namespace hussar {
         }
 
         /**
-         * returns true if the name is alphabetic + '_', else returns false
+         * returns an unordered map of http cookies with the minimum valid values
          */
-        bool validateParamName(const std::string& name)
+        std::unordered_map<std::string, Cookie> getCookies(const std::string& cookieString)
         {
-            if (not name.size())
-                return false;
-
-            char c;
-            for (size_t n = 0; n < name.size(); ++n) {
-                c = name[n];
-
-                if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
-                    continue;
-                else
-                    return false;
-
+            std::vector<Cookie> cookie_vec = ParseCookies(cookieString);
+            std::unordered_map<std::string, Cookie> cookie_map;
+            for (Cookie& cookie : cookie_vec) {
+                if (cookie.name != "" && cookie.value != "") {
+                    cookie_map[cookie.name] = cookie;
+                }
             }
-            return true;
+
+            return cookie_map;
         }
 
     public:
@@ -285,6 +286,9 @@ namespace hussar {
         
             // parse the request headers
             size_t lineIdx = this->collectHeaders(reqVec);
+
+            // parse cookie values
+            this->Cookies = this->getCookies(this->CookieString);
 
             // set connection to keepalive
             this->KeepAlive = this->Connection == "keep-alive";

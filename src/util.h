@@ -95,7 +95,7 @@ namespace hussar {
     /**
      * strips terminal control chars from a string
      */
-    std::string StripString(const std::string& str)
+    std::string TerminalString(const std::string& str)
     {
         std::ostringstream oss;
     
@@ -117,6 +117,35 @@ namespace hussar {
             }
         }
     
+        return oss.str();
+    }
+
+    std::string StripString(const std::string& str)
+    {
+        std::ostringstream oss;
+        size_t content_start = 0;
+        size_t content_end = 0;
+
+        // get content start and end
+        for (size_t n = 0; n < str.size(); ++n) {
+            switch (str[n]) {
+                default:
+                    content_end = n;
+                    break;
+                case ' ':
+                case '\t':
+                    if (content_end) content_start = n + 1;
+                    break;
+            }
+        }
+
+        // format string with only content
+        for (size_t n = 0; n < str.size(); ++n) {
+            if (n <= content_end && n >= content_start) {
+                oss << str[n];
+            }
+        }
+        
         return oss.str();
     }
 
@@ -173,7 +202,27 @@ namespace hussar {
         PrintLock.unlock();
         std::exit(1);
     }
- 
+
+    /**
+     * returns true if the name is alphabetic + '_', else returns false
+     */
+    bool ValidateParamName(const std::string& name)
+    {
+        if (not name.size())
+            return false;
+
+        char c;
+        for (size_t n = 0; n < name.size(); ++n) {
+            c = name[n];
+
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
+                continue;
+            else
+                return false;
+
+        }
+        return true;
+    }
 }
 
 #endif
