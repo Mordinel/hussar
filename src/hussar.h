@@ -27,7 +27,7 @@ namespace hussar {
         /**
          * handles a single client connection
          */
-        void handleConnection(int client) {
+        void handleConnection(int client, SSL* ssl) {
             // allocate stack buffers for host and service strings
             char host[NI_MAXHOST];
             char svc[NI_MAXSERV];
@@ -53,79 +53,12 @@ namespace hussar {
                 memset(buf, 0, 4096);
         
                 // read data incoming from the client into the recv buffer
-                int bytesRecv = recv(client, buf, 4096, 0);
-        
-                switch (bytesRecv) {
-                    case -1: // connection error
-                        if (this->verbose) {
-                            PrintLock.lock();
-                               std::cerr << "There was a connection issue with " << host << std::endl;
-                            PrintLock.unlock();
-                        }
-                        goto srv_disconnect; // disconnect
-                        break;
-                    case 0: // client disconnected
-                        goto srv_disconnect; // disconnect
-                        break;
-                    default:
-                        std::string bufStr{buf};
-                        Request req{bufStr, host};
-                        Response resp{req};
- 
-                        this->Router.Route(req, resp);
-
-                        std::string response = resp.Serialize();
-                        send(client, response.c_str(), response.size(), 0);
-
-                        // if keep alive
-                        if (req.KeepAlive) {
-                            continue;
-                        }
-
-                        goto srv_disconnect;
-                        break;
+                int status;
+                if (ssl) {
+                    status = SSL_read(ssl, buf, 4096);
+                } else {
+                    status = recv(client, buf, 4094, 0);
                 }
-            }
-
-        srv_disconnect:
-            if (this->verbose) {
-                PrintLock.lock();
-                    std::cout << host << " disconnected" << std::endl;
-                PrintLock.unlock();
-            }
-            close(client);
-        }
-
-        /**
-         * handles a single client connection
-         */
-        void handleSSLConnection(int client, SSL* ssl) {
-            // allocate stack buffers for host and service strings
-            char host[NI_MAXHOST];
-            char svc[NI_MAXSERV];
-        
-            // set all chars to null in each buffer
-            memset(host, 0, NI_MAXHOST);
-            memset(svc, 0, NI_MAXSERV);
-            
-            inet_ntop(AF_INET, &this->clientAddress.sin_addr, host, NI_MAXHOST);
-        
-            // allocate a stack buffer for recieved data
-            char buf[4096];
-
-            if (this->verbose) {
-                PrintLock.lock();
-                    std::cout << host <<" connected" << std::endl;
-                PrintLock.unlock();
-            }
-
-            // read and handle bytes until the connection ends
-            while (true) {
-                // set the recv buffer to null chars
-                memset(buf, 0, 4096);
-        
-                // read data incoming from the client into the recv buffer
-                int status = SSL_read(ssl, buf, 4096);
         
                 switch (status) {
                     case -1: // connection error
@@ -147,7 +80,11 @@ namespace hussar {
                         this->Router.Route(req, resp);
 
                         std::string response = resp.Serialize();
-                        SSL_write(ssl, response.c_str(), response.size());
+                        if (ssl) {
+                            SSL_write(ssl, response.c_str(), response.size());
+                        } else {
+                            send(client, response.c_str(), response.size(), 0);
+                        }
 
                         // if keep alive
                         if (req.KeepAlive) {
@@ -166,8 +103,10 @@ namespace hussar {
                 PrintLock.unlock();
             }
 
-            SSL_shutdown(ssl);
-            SSL_free(ssl);
+            if (ssl) {
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
+            }
             close(client);
         }
 
@@ -285,10 +224,10 @@ namespace hussar {
                     SSL* ssl = SSL_new(this->ctx);
                     SSL_set_fd(ssl, clientSocket);
                     if (SSL_accept(ssl) > 0) {
-                        this->threadpool.Dispatch(&Hussar::handleSSLConnection, this, clientSocket, ssl);
+                        this->threadpool.Dispatch(&Hussar::handleConnection, this, clientSocket, ssl);
                     }
                 } else {
-                    this->threadpool.Dispatch(&Hussar::handleConnection, this, clientSocket);
+                    this->threadpool.Dispatch(&Hussar::handleConnection, this, clientSocket, nullptr);
                 }
             }
         }
