@@ -37,7 +37,7 @@ namespace hussar {
         SSL_CTX* ctx;
 
     public:
-        Router Router;
+        hussar::Router Router;
 
     private:
 
