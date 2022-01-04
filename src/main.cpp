@@ -100,15 +100,6 @@ void web_server(hus::Request& req, hus::Response& resp)
         }
         hus::PrintLock.unlock();
     }
-
-    // logging
-    hus::PrintLock.lock();
-    if (req.UserAgent.size()) {
-        std::cout << req.RemoteHost << "\t" << resp.Headers["Date"] << "\t" << hus::StripString(req.Method) << "\t" << resp.code << "\t" << hus::StripString(req.DocumentOriginal) << "\t" << hus::StripString(req.UserAgent) << "\n";
-    } else {
-        std::cout << req.RemoteHost << "\t" << resp.Headers["Date"] << "\t" << hus::StripString(req.Method) << "\t" << resp.code << "\t" << hus::StripString(req.DocumentOriginal) << "\n";
-    }
-    hus::PrintLock.unlock();
 }
 
 int main(int argc, char* argv[])

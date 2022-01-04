@@ -73,6 +73,19 @@ namespace hussar {
  
                         this->Router.Route(req, resp);
 
+                        // we do a little logging
+                        if (this->verbose) {
+                            PrintLock.lock();
+                            std::cout << req.RemoteHost <<
+                                "\t" << resp.Headers["Date"] <<
+                                "\t" << hus::StripString(req.Method) <<
+                                "\t" << resp.code <<
+                                "\t" << hus::StripString(req.DocumentOriginal) <<
+                                "\t" << hus::StripString(req.UserAgent) <<
+                                "\n";
+                            PrintLock.unlock();
+                        }
+
                         std::string response = resp.Serialize();
                         if (ssl) {
                             SSL_write(ssl, response.c_str(), response.size());
