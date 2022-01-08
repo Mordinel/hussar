@@ -73,7 +73,7 @@ void web_server(hus::Request& req, hus::Response& resp)
                 // file exists, load it
                 std::ifstream file(p);
                 resp.code = "200";
-                resp.Headers["Content-Type"] = hus::GetMime(document);
+                resp.Headers["Content-Type"] = hus::GetMime(p);
                 resp.body = std::string(
                             (std::istreambuf_iterator<char>(file)),
                              std::istreambuf_iterator<char>());

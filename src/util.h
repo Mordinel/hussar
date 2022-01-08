@@ -169,20 +169,13 @@ namespace hussar {
     /**
      * returns a string containing the mime time of the extension of the document string.
      */
-    std::string GetMime(std::string& document) {
-        size_t l = document.find_last_of('.');
-    
-        // if no char found
-        if (l == std::string::npos) {
-            return mimes.begin()->second; // default to 1st item (text file)
+    std::string GetMime(std::filesystem::path& document) {
+        std::string extension = document.extension();
+        if (extension.size() < 2) {
+            return "application/octet-stream";
         }
-    
-        // create a string of the extension
-        std::string extension(document.begin() + l + 1, document.end());
-    
-        // find extension in mimes
-        auto mimeIter = mimes.find(extension);
-    
+
+        auto mimeIter = mimes.find(extension.substr(1));
         if (mimeIter == mimes.end()) {
             return "application/octet-stream";
         }
