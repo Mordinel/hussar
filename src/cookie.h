@@ -21,7 +21,7 @@
 #include "pch.h"
 
 namespace hussar {
-    enum class samesite {
+    enum class SameSite {
         UNDEFINED,
         NONE,
         LAX,
@@ -31,27 +31,27 @@ namespace hussar {
     struct Cookie {
         std::string name;
         std::string value;
-        bool Secure;
-        bool HttpOnly;
-        samesite SameSite;
-        std::string Domain;
-        std::string Path;
-        int MaxAge;
+        bool secure;
+        bool http_only;
+        SameSite same_site;
+        std::string domain;
+        std::string path;
+        int max_age;
 
         Cookie()
-            : name(""), value(""), Secure(false), HttpOnly(false), SameSite(samesite::UNDEFINED), Domain(""), Path(""), MaxAge(-1)
+            : name(""), value(""), secure(false), http_only(false), same_site(SameSite::UNDEFINED), domain(""), path(""), max_age(-1)
         {}
 
         /**
          * returns true if the cookie is valid
          */
-        bool IsValid()
+        bool is_valid()
         {
-            if (not ValidateParamName(StripString(this->name))) {
+            if (not validate_param_name(trim(this->name))) {
                 return false;
             }
 
-            if (not StripString(this->value).size()) {
+            if (not trim(this->value).size()) {
                 return false;
             }
 
@@ -61,54 +61,54 @@ namespace hussar {
         /**
          * returns the cookie in its http string representation
          */
-        std::string Serialize()
+        std::string serialize()
         {
             std::ostringstream oss;
 
             // check if cookie is valid
-            if (not this->IsValid()) {
+            if (not this->is_valid()) {
                 return "";
             }
 
-            std::string name_stripped = StripString(this->name);
-            std::string value_stripped = StripString(this->value);
+            std::string name_stripped = trim(this->name);
+            std::string value_stripped = trim(this->value);
             oss << name_stripped << "=" << value_stripped;
 
-            std::string domain_stripped = StripString(this->Domain);
+            std::string domain_stripped = trim(this->domain);
             if (domain_stripped.size()) {
                 oss << "; Domain=" << domain_stripped;
             }
             
-            std::string path_stripped = StripString(this->Path);
+            std::string path_stripped = trim(this->path);
             if (path_stripped.size()) {
                 oss << "; Path=" << path_stripped;
             }
 
-            if (this->SameSite != samesite::UNDEFINED) {
+            if (this->same_site != SameSite::UNDEFINED) {
                 oss << "; SameSite=";
-                switch (this->SameSite) {
+                switch (this->same_site) {
                     default: break;
-                    case samesite::NONE:
+                    case SameSite::NONE:
                         oss << "None";
                         break;
-                    case samesite::LAX:
+                    case SameSite::LAX:
                         oss << "Lax";
                         break;
-                    case samesite::STRICT:
+                    case SameSite::STRICT:
                         oss << "Strict";
                         break;
                 }
             }
 
-            if (this->MaxAge > -1) {
-                oss << "; Max-Age=" << this->MaxAge;
+            if (this->max_age > -1) {
+                oss << "; Max-Age=" << this->max_age;
             }
 
-            if (this->Secure) {
+            if (this->secure) {
                 oss << "; Secure";
             }
 
-            if (this->HttpOnly) {
+            if (this->http_only) {
                 oss << "; HttpOnly";
             }
 
@@ -119,21 +119,21 @@ namespace hussar {
     /**
      * Take a vector of Cookie structs and serialize them into HTTP cookie strings
      */
-    std::string SerializeCookies(std::vector<Cookie>& cookieVec)
+    std::string serialize_cookies(std::vector<Cookie>& cookies)
     {
         std::ostringstream oss;
         std::string serialized;
         bool first = true;
 
         // input has no cookies
-        if (not cookieVec.size()) {
+        if (not cookies.size()) {
             return "";
         }
 
         // for ever cookie in vec
-        for (Cookie& cookie : cookieVec) {
+        for (Cookie& cookie : cookies) {
             // serialize it
-            serialized = cookie.Serialize();
+            serialized = cookie.serialize();
             // if the result contains something
             if (serialized.size()) {
                 // put the serialized cookie into the output buffer
@@ -152,13 +152,13 @@ namespace hussar {
     /**
      * Take a string containing arbitrary HTTP cookies and parse them into Cookie structs
      */
-    std::vector<Cookie> DeserializeCookies(const std::string& cookieStr)
+    std::vector<Cookie> deserialize_cookies(const std::string& cookies)
     {
         enum {
             C_NAME, C_VALUE, C_SAMESITE, C_DOMAIN, C_PATH, C_EXPIRES, C_MAXAGE
         } state = C_NAME;
-        std::vector<Cookie> cookie_vec;
-        std::istringstream iss(cookieStr);
+        std::vector<Cookie> serialize_cookies;
+        std::istringstream iss(cookies);
         std::ostringstream oss;
         std::stringstream ss;
         std::string str;
@@ -172,56 +172,56 @@ namespace hussar {
                 switch (state) {
                     default: break;
                     case C_VALUE:
-                        str = StripString(oss.str());
+                        str = trim(oss.str());
                         if (str.size()) {
                             cookie.value = str;
-                            cookie_vec.push_back(cookie);
+                            serialize_cookies.push_back(cookie);
                         }
                         break;
                     case C_NAME:
-                        str = StripString(oss.str());
+                        str = trim(oss.str());
                         if (str == "Secure") {
-                            cookie.Secure = true;
-                            cookie_vec.push_back(cookie);
+                            cookie.secure = true;
+                            serialize_cookies.push_back(cookie);
                         } else if (str == "HttpOnly") {
-                            cookie.HttpOnly = true;
-                            cookie_vec.push_back(cookie);
+                            cookie.http_only = true;
+                            serialize_cookies.push_back(cookie);
                         } else {
-                            cookie_vec.push_back(cookie);
+                            serialize_cookies.push_back(cookie);
                         }
                         break;
                     case C_SAMESITE:
-                        str = StripString(oss.str());
+                        str = trim(oss.str());
                         if (str == "None") {
-                            cookie.SameSite = samesite::NONE;
+                            cookie.same_site = SameSite::NONE;
                         } else if (str == "Lax") {
-                            cookie.SameSite = samesite::LAX;
+                            cookie.same_site = SameSite::LAX;
                         } else if (str == "Strict") {
-                            cookie.SameSite = samesite::STRICT;
+                            cookie.same_site = SameSite::STRICT;
                         } else {
-                            cookie.SameSite = samesite::UNDEFINED;
+                            cookie.same_site = SameSite::UNDEFINED;
                         }
-                        cookie_vec.push_back(cookie);
+                        serialize_cookies.push_back(cookie);
                         break;
                     case C_DOMAIN:
-                        cookie.Domain = StripString(oss.str());
-                        cookie_vec.push_back(cookie);
+                        cookie.domain = trim(oss.str());
+                        serialize_cookies.push_back(cookie);
                         break;
                     case C_PATH:
-                        cookie.Path = StripString(oss.str());
-                        cookie_vec.push_back(cookie);
+                        cookie.path = trim(oss.str());
+                        serialize_cookies.push_back(cookie);
                         break;
                     case C_EXPIRES:
                         // don't use this feature
                         break;
                     case C_MAXAGE:
                         ss.clear();
-                        ss << StripString(oss.str());
-                        ss >> cookie.MaxAge;
+                        ss << trim(oss.str());
+                        ss >> cookie.max_age;
                         if (ss.fail()) {
-                            cookie.MaxAge = -1;
+                            cookie.max_age = -1;
                         }
-                        cookie_vec.push_back(cookie);
+                        serialize_cookies.push_back(cookie);
                         break;
                 }
                 break;
@@ -233,7 +233,7 @@ namespace hussar {
                 c_equal:
                     str = oss.str();
                     if (str.size()) {
-                        str = StripString(str);
+                        str = trim(str);
                         // could be parameter options
                         if (str == "SameSite") {
                             state = C_SAMESITE;
@@ -251,7 +251,7 @@ namespace hussar {
                                 state = C_VALUE;
                                 cookie.name = str;
                             } else {
-                                cookie_vec.push_back(cookie);
+                                serialize_cookies.push_back(cookie);
                                 // start a new cookie
                                 cookie = Cookie();
                                 state = C_NAME;
@@ -271,16 +271,16 @@ namespace hussar {
                         if (str.size()) {
                             oss.str("");
                             state = C_NAME;
-                            cookie.value = StripString(str);
+                            cookie.value = trim(str);
                         }
                         oss.str("");
                         break;
                     } else if (state == C_NAME) {
-                        str = StripString(oss.str());
+                        str = trim(oss.str());
                         if (str == "Secure") {
-                            cookie.Secure = true;
+                            cookie.secure = true;
                         } else if (str == "HttpOnly") {
-                            cookie.HttpOnly = true;
+                            cookie.http_only = true;
                         }
                         oss.str("");
                         break;
@@ -299,32 +299,32 @@ namespace hussar {
                             default:
                                 break;
                             case C_SAMESITE:
-                                str = StripString(oss.str());
+                                str = trim(oss.str());
                                 if (str == "None") {
-                                    cookie.SameSite = samesite::NONE;
+                                    cookie.same_site = SameSite::NONE;
                                 } else if (str == "Lax") {
-                                    cookie.SameSite = samesite::LAX;
+                                    cookie.same_site = SameSite::LAX;
                                 } else if (str == "Strict") {
-                                    cookie.SameSite = samesite::STRICT;
+                                    cookie.same_site = SameSite::STRICT;
                                 } else {
-                                    cookie.SameSite = samesite::UNDEFINED;
+                                    cookie.same_site = SameSite::UNDEFINED;
                                 }
                                 break;
                             case C_DOMAIN:
-                                cookie.Domain = StripString(oss.str());
+                                cookie.domain = trim(oss.str());
                                 break;
                             case C_PATH:
-                                cookie.Path = StripString(oss.str());
+                                cookie.path = trim(oss.str());
                                 break;
                             case C_EXPIRES:
                                 // don't use this feature
                                 break;
                             case C_MAXAGE:
                                 ss.clear();
-                                ss << StripString(oss.str());
-                                ss >> cookie.MaxAge;
+                                ss << trim(oss.str());
+                                ss >> cookie.max_age;
                                 if (ss.fail()) {
-                                    cookie.MaxAge = -1;
+                                    cookie.max_age = -1;
                                 }
                                 break;
                         }
@@ -335,7 +335,7 @@ namespace hussar {
             }
         }
 
-        return cookie_vec;
+        return serialize_cookies;
     }
 };
 

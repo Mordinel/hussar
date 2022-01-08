@@ -42,9 +42,9 @@ void web_server(hus::Request& req, hus::Response& resp)
     std::filesystem::path p;
     std::regex slashes("/+");
     std::regex dots("[.][.]+");
-    std::string document = req.Document;
+    std::string document = req.document;
 
-    if (req.isGood) {
+    if (req.is_good) {
         document = std::regex_replace(document, slashes, "/"); // collapse slashes into a single slash
         document = std::regex_replace(document, dots, ""); // collapse 2 or more dots into nothing
 
@@ -73,7 +73,7 @@ void web_server(hus::Request& req, hus::Response& resp)
                 // file exists, load it
                 std::ifstream file(p);
                 resp.code = "200";
-                resp.Headers["Content-Type"] = hus::GetMime(p);
+                resp.headers["Content-Type"] = hus::get_mime(p);
                 resp.body = std::string(
                             (std::istreambuf_iterator<char>(file)),
                              std::istreambuf_iterator<char>());
@@ -108,14 +108,14 @@ void web_server(hus::Request& req, hus::Response& resp)
 
     // prints the GET and POST request parameters in verbose mode
     if (VERBOSE) {
-        hus::PrintLock.lock();
-        for (auto& p : req.GET) {
-            std::cout << "GET[" << hus::TerminalString(p.first) << "] = " << hus::TerminalString(p.second) << "\n";
+        hus::print_lock.lock();
+        for (auto& p : req.get) {
+            std::cout << "GET[" << hus::strip_terminal_chars(p.first) << "] = " << hus::strip_terminal_chars(p.second) << "\n";
         }
-        for (auto& p : req.POST) {
-            std::cout << "POST[" << hus::TerminalString(p.first) << "] = " << hus::TerminalString(p.second) << "\n";
+        for (auto& p : req.post) {
+            std::cout << "POST[" << hus::strip_terminal_chars(p.first) << "] = " << hus::strip_terminal_chars(p.second) << "\n";
         }
-        hus::PrintLock.unlock();
+        hus::print_lock.unlock();
     }
 }
 
@@ -191,8 +191,8 @@ int main(int argc, char* argv[])
         server = new hus::Hussar(host, port, threads, VERBOSE);
     }
 
-    server->Router.DEFAULT(&web_server);
-    server->Listen();
+    server->router.fallback(&web_server);
+    server->serve();
 
     delete server;
 

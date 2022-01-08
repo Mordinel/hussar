@@ -31,14 +31,14 @@ namespace hussar {
 
     class Router {
     protected:
-        void (*fallback)(Request& req, Response& resp);
-        std::unordered_map<std::string, void (*)(Request&, Response&)> get;
-        std::unordered_map<std::string, void (*)(Request&, Response&)> head;
-        std::unordered_map<std::string, void (*)(Request&, Response&)> post;
+        void (*FALLBACK)(Request& req, Response& resp);
+        std::unordered_map<std::string, void (*)(Request&, Response&)> GET;
+        std::unordered_map<std::string, void (*)(Request&, Response&)> HEAD;
+        std::unordered_map<std::string, void (*)(Request&, Response&)> POST;
 
     public:
         Router()
-            : fallback(&not_implemented)
+            : FALLBACK(&not_implemented)
         {}
 
         // delete copy constructors
@@ -47,90 +47,90 @@ namespace hussar {
         Router& operator=(Router& r) = delete;
         Router& operator=(const Router& r) = delete;
 
-        void Route(Request& req, Response& resp)
+        void route(Request& req, Response& resp)
         {
-            if (req.isGood) {
-                if (req.Method == "GET") {
-                    this->GET(req, resp);
-                } else if (req.Method == "HEAD") {
-                    this->HEAD(req, resp);
-                } else if (req.Method == "POST") {
-                    this->POST(req, resp);
+            if (req.is_good) {
+                if (req.method == "GET") {
+                    this->get(req, resp);
+                } else if (req.method == "HEAD") {
+                    this->head(req, resp);
+                } else if (req.method == "POST") {
+                    this->post(req, resp);
                 } else {
-                    this->DEFAULT(req, resp);
+                    this->fallback(req, resp);
                 }
             } else {
-                resp.Headers["Content-Type"] = "text/html";
+                resp.headers["Content-Type"] = "text/html";
                 resp.code = "400";
                 resp.body = "<h1>400: Bad Request</h1>";
             }
         }
 
-        // register GET route
-        void GET(const std::string& route, void (*func)(Request& req, Response& resp))
+        // register get route
+        void get(const std::string& route, void (*func)(Request& req, Response& resp))
         {
-            this->get[route] = func;
+            this->GET[route] = func;
         }
 
-        // call GET route
-        void GET(Request& req, Response& resp)
+        // call get route
+        void get(Request& req, Response& resp)
         {
-            if (this->get.find(req.Document) != this->get.end()) {
-                (*this->get[req.Document])(req, resp);
-            } else if (this->fallback) {
-                (*this->fallback)(req, resp);
+            if (this->GET.find(req.document) != this->GET.end()) {
+                (*this->GET[req.document])(req, resp);
+            } else if (this->FALLBACK) {
+                (*this->FALLBACK)(req, resp);
             } else {
                 not_implemented(req, resp);
             }
         }
 
-        // register HEAD route
-        void HEAD(const std::string& route, void (*func)(Request& req, Response& resp))
+        // register head route
+        void head(const std::string& route, void (*func)(Request& req, Response& resp))
         {
-            this->head[route] = func;
+            this->HEAD[route] = func;
         }
 
-        // call HEAD route
-        void HEAD(Request& req, Response& resp)
+        // call head route
+        void head(Request& req, Response& resp)
         {
-            if (this->head.find(req.Document) != this->head.end()) {
-                (*this->head[req.Document])(req, resp);
-            } else if (this->fallback) {
-                (*this->fallback)(req, resp);
+            if (this->HEAD.find(req.document) != this->HEAD.end()) {
+                (*this->HEAD[req.document])(req, resp);
+            } else if (this->FALLBACK) {
+                (*this->FALLBACK)(req, resp);
             } else {
                 not_implemented(req, resp);
             }
         }
 
-        // register POST route
-        void POST(const std::string& route, void (*func)(Request& req, Response& resp))
+        // register post route
+        void post(const std::string& route, void (*func)(Request& req, Response& resp))
         {
-            this->post[route] = func;
+            this->POST[route] = func;
         }
 
-        // call POST route
-        void POST(Request& req, Response& resp)
+        // call post route
+        void post(Request& req, Response& resp)
         {
-            if (this->post.find(req.Document) != this->post.end()) {
-                (*this->post[req.Document])(req, resp);
-            } else if (this->fallback) {
-                (*this->fallback)(req, resp);
+            if (this->POST.find(req.document) != this->POST.end()) {
+                (*this->POST[req.document])(req, resp);
+            } else if (this->FALLBACK) {
+                (*this->FALLBACK)(req, resp);
             } else {
                 not_implemented(req, resp);
             }
         }
 
-        // register DEFAULT route
-        void DEFAULT(void (*func)(Request& req, Response& resp))
+        // register fallback route
+        void fallback(void (*func)(Request& req, Response& resp))
         {
-            this->fallback = func;
+            this->FALLBACK = func;
         }
 
-        // call DEFAULT route
-        void DEFAULT(Request& req, Response& resp)
+        // call fallback route
+        void fallback(Request& req, Response& resp)
         {
-            if (this->fallback) {
-                (*this->fallback)(req, resp);
+            if (this->FALLBACK) {
+                (*this->FALLBACK)(req, resp);
             }
         }
     };

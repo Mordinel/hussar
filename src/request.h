@@ -26,51 +26,51 @@ namespace hussar {
     class Request {
 
     public:
-        bool isGood;
-        bool KeepAlive;
-        std::string RemoteHost;
-        std::string Method;
-        std::string Document;
-        std::string DocumentOriginal;
-        std::string GetParameters;
-        std::string PostParameters;
-        std::string Version;
-        std::vector<std::string> Headers;
-        std::string UserAgent;
-        std::string Connection;
-        std::string ContentType;
-        std::string VirtualHost;
-        std::string CookieString;
-        std::string Body;
-        std::string SessionID;
-        std::unordered_map<std::string, std::string> GET;
-        std::unordered_map<std::string, std::string> POST;
-        std::unordered_map<std::string, Cookie> Cookies;
+        bool is_good;
+        bool keep_alive;
+        std::string remote_host;
+        std::string method;
+        std::string document;
+        std::string document_raw;
+        std::string get_query_raw;
+        std::string post_query_raw;
+        std::string version;
+        std::vector<std::string> headers_raw;
+        std::string user_agent;
+        std::string connection;
+        std::string content_type;
+        std::string virtual_host;
+        std::string cookies_raw;
+        std::string body;
+        std::string session_id;
+        std::unordered_map<std::string, std::string> get;
+        std::unordered_map<std::string, std::string> post;
+        std::unordered_map<std::string, Cookie> cookies;
 
     private:
         /**
          * extract the string after the host header name
          */
-        std::string extractHeaderContent(std::string& str)
+        std::string extract_header_content(std::string& str)
         {
             std::ostringstream oss;
-            std::vector<std::string> splitLine;
+            std::vector<std::string> split_line;
             size_t n;
         
-            SplitString(str, ' ', splitLine);
+            split_string(str, ' ', split_line);
         
-            oss << splitLine[1];
-            for (n = 2; n < splitLine.size(); ++n) {
-                oss << " " << splitLine[n];
+            oss << split_line[1];
+            for (n = 2; n < split_line.size(); ++n) {
+                oss << " " << split_line[n];
             }
         
-            return TerminalString(oss.str());
+            return strip_terminal_chars(oss.str());
         }
     
         /**
          * extract the string before the first '?' in the document line
          */
-        std::string extractDocument(std::string& str) {
+        std::string extract_document(std::string& str) {
             std::ostringstream oss;
             for (size_t i = 0; str[i] && str[i] != '?'; ++i) {
                 oss << str[i];
@@ -81,7 +81,7 @@ namespace hussar {
         /**
          * extract the string after the first '?' in the document line
          */
-        std::string extractGet(std::string& str) {
+        std::string extract_get(std::string& str) {
             std::ostringstream oss;
             const char* s = str.c_str();
         
@@ -103,12 +103,12 @@ namespace hussar {
          * parses the given parameters in getStr and stores them in dest
          * handles both GET and POST parameters
          */
-        void parseParams(std::unordered_map<std::string, std::string>& dest, std::string& getStr)
+        void parse_params(std::unordered_map<std::string, std::string>& dest, std::string& query_raw)
         {
             enum {
                 PG_NAME, PG_VALUE
             } state = PG_NAME;
-            std::istringstream iss(getStr);
+            std::istringstream iss(query_raw);
             std::ostringstream oss;
             std::string name;
             std::string value;
@@ -120,8 +120,8 @@ namespace hussar {
                     if (state == PG_VALUE && name.size()) {
                         value = oss.str();
                         if (value.size()) {
-                            if (ValidateParamName(name))
-                                dest[name] = UrlDecode(value);
+                            if (validate_param_name(name))
+                                dest[name] = url_decode(value);
                         }
                     }
                     break;
@@ -146,8 +146,8 @@ namespace hussar {
                             value = oss.str();
                             if (value.size()) {
                                 oss.str("");
-                                if (ValidateParamName(name))
-                                    dest[name] = UrlDecode(value);
+                                if (validate_param_name(name))
+                                    dest[name] = url_decode(value);
                                 state = PG_NAME;
                             } else {
                                 value = "";
@@ -166,13 +166,13 @@ namespace hussar {
          * collects header parameters
          * returns the line that the body should be on.
          */
-        size_t collectHeaders(std::vector<std::string>& reqVec)
+        size_t collect_headers(std::vector<std::string>& reqVec)
         {
             // parse the request headers and extract the request body
             size_t lineIdx;
-            std::vector<std::string> splitLine;
+            std::vector<std::string> split_line;
             for (lineIdx = 1; lineIdx < reqVec.size(); ++lineIdx) {
-                splitLine.clear();
+                split_line.clear();
                 std::string& line = reqVec[lineIdx];
         
                 if (line == "") {
@@ -181,15 +181,15 @@ namespace hussar {
                 }
         
                 if (line.rfind("User-Agent: ", 0) != std::string::npos) {
-                    this->UserAgent = this->extractHeaderContent(line);
+                    this->user_agent = this->extract_header_content(line);
                 } else if (line.rfind("Host: ", 0) != std::string::npos) {
-                    this->VirtualHost = this->extractHeaderContent(line);
+                    this->virtual_host = this->extract_header_content(line);
                 } else if (line.rfind("Connection: ", 0) != std::string::npos) {
-                    this->Connection = this->extractHeaderContent(line);
+                    this->connection = this->extract_header_content(line);
                 } else if (line.rfind("Content-Type: ", 0) != std::string::npos) {
-                    this->ContentType = this->extractHeaderContent(line);
+                    this->content_type = this->extract_header_content(line);
                 } else if (line.rfind("Cookie: ", 0) != std::string::npos) {
-                    this->CookieString = this->extractHeaderContent(line);
+                    this->cookies_raw = this->extract_header_content(line);
                 }
             }
 
@@ -199,7 +199,7 @@ namespace hussar {
         /**
          * extracts the body of the document, assuming lineIdx is the line in reqVec that the body starts on
          */
-        std::string extractBody(std::vector<std::string>& reqVec, size_t index)
+        std::string extract_body(std::vector<std::string>& reqVec, size_t index)
         {
             size_t lineIdx = index;
             std::ostringstream oss;
@@ -212,29 +212,29 @@ namespace hussar {
         /**
          * validates the request line, returns true if it's valid, false if it's not.
          */
-        bool validateRequestLine(std::vector<std::string>& requestLine)
+        bool validate_resource_line(std::vector<std::string>& request_line)
         {
-            std::string& method   = requestLine[0];
-            std::string& httpver  = requestLine[2];
+            std::string& method = request_line[0];
+            std::string& http_version = request_line[2];
         
             if ((method != "GET") && (method != "POST") && (method != "HEAD")) {
                 return false;
             }
         
-            std::vector<std::string> httpvervec;
-            SplitString(httpver, '/', httpvervec);
-            if (httpvervec.size() != 2) {
+            std::vector<std::string> http_version_split;
+            split_string(http_version, '/', http_version_split);
+            if (http_version_split.size() != 2) {
                 return false;
             }
         
-            std::string& protocol = httpvervec[0];
+            std::string& protocol = http_version_split[0];
             if (protocol != "HTTP") {
                 return false;
             }
         
-            std::string strversion = httpvervec[1].substr(0,3);
+            std::string http_version_trunc = http_version_split[1].substr(0,3);
             float version;
-            std::istringstream iss(strversion);
+            std::istringstream iss(http_version_trunc);
             iss >> version;
             if (iss.fail()) {
                 return false;
@@ -250,17 +250,17 @@ namespace hussar {
         /**
          * returns an unordered map of http cookies with the minimum valid values
          */
-        std::unordered_map<std::string, Cookie> getCookies(const std::string& cookieString)
+        std::unordered_map<std::string, Cookie> get_cookies(const std::string& cookies_raw)
         {
-            std::vector<Cookie> cookie_vec = DeserializeCookies(cookieString);
-            std::unordered_map<std::string, Cookie> cookie_map;
+            std::vector<Cookie> cookie_vec = deserialize_cookies(cookies_raw);
+            std::unordered_map<std::string, Cookie> serialized_cookies;
             for (Cookie& cookie : cookie_vec) {
                 if (cookie.name != "" && cookie.value != "") {
-                    cookie_map[cookie.name] = cookie;
+                    serialized_cookies[cookie.name] = cookie;
                 }
             }
 
-            return cookie_map;
+            return serialized_cookies;
         }
 
     public:
@@ -268,60 +268,60 @@ namespace hussar {
          * populates the Request class data members with request data
          */
         Request(const std::string& request, std::string host)
-            : isGood(true), KeepAlive(false), RemoteHost(host)
+            : is_good(true), keep_alive(false), remote_host(host)
         {
             // split into lines
-            std::vector<std::string> reqVec;
-            SplitString(request, '\n', reqVec);
+            std::vector<std::string> request_lines;
+            split_string(request, '\n', request_lines);
         
-            if (reqVec.size() < 1) {
-                this->isGood = false;
+            if (request_lines.size() < 1) {
+                this->is_good = false;
                 return;
             }
         
             // get the first line as a vector
-            std::vector<std::string> requestLine;
-            SplitString(reqVec[0], ' ', requestLine);
+            std::vector<std::string> resource_line_split;
+            split_string(request_lines[0], ' ', resource_line_split);
                 
             // invalid request line
-            if (requestLine.size() != 3) {
-                this->isGood = false;
+            if (resource_line_split.size() != 3) {
+                this->is_good = false;
                 return;
             }
         
             // parse the request line
-            this->Method = requestLine[0];
-            this->DocumentOriginal = requestLine[1];
-            this->Version = requestLine[2];
-            this->Document = this->extractDocument(this->DocumentOriginal);
-            this->Document = UrlDecode(this->Document);
-            this->GetParameters = this->extractGet(requestLine[1]);
+            this->method = resource_line_split[0];
+            this->document_raw = resource_line_split[1];
+            this->version = resource_line_split[2];
+            this->document = this->extract_document(this->document_raw);
+            this->document = url_decode(this->document);
+            this->get_query_raw = this->extract_get(resource_line_split[1]);
         
             // validate request line
-            if (not this->validateRequestLine(requestLine)){
-                this->isGood = false;
+            if (not this->validate_resource_line(resource_line_split)){
+                this->is_good = false;
                 return;
             }
         
             // parse the request headers
-            size_t lineIdx = this->collectHeaders(reqVec);
+            size_t line_index = this->collect_headers(request_lines);
 
             // parse cookie values
-            this->Cookies = this->getCookies(this->CookieString);
+            this->cookies = this->get_cookies(this->cookies_raw);
 
             // set connection to keepalive
-            this->KeepAlive = this->Connection == "keep-alive";
+            this->keep_alive = this->connection == "keep-alive";
 
             // extract the request body
-            this->Body = this->extractBody(reqVec, lineIdx);
+            this->body = this->extract_body(request_lines, line_index);
 
             // parse GET params
-            this->parseParams(this->GET, this->GetParameters);
+            this->parse_params(this->get, this->get_query_raw);
 
             // parse POST params if method is POST
-            if (this->Method == "POST" && lineIdx < reqVec.size()) {
-                this->PostParameters = reqVec[lineIdx];
-                this->parseParams(this->POST, this->PostParameters);
+            if (this->method == "POST" && line_index < request_lines.size()) {
+                this->post_query_raw = request_lines[line_index];
+                this->parse_params(this->post, this->post_query_raw);
             }
         }
 

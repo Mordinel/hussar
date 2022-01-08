@@ -24,6 +24,7 @@
 
 namespace hussar {
     std::mutex openssl_rand_mtx;
+    std::unique_lock<std::mutex> openssl_rand_lock(openssl_rand_mtx);
 
     struct Session {
         std::string id;
@@ -35,19 +36,19 @@ namespace hussar {
             std::memset(id_data, 0, SESSION_ID_LEN);
             std::ostringstream oss;
 
-            openssl_rand_mtx.lock();
+            openssl_rand_lock.lock();
                 int error = RAND_bytes(id_data, SESSION_ID_LEN);
-            openssl_rand_mtx.unlock();
+            openssl_rand_lock.unlock();
 
             if (error == -1) {
-                PrintLock.lock();
+                print_lock.lock();
                 std::cerr << "Not supported by the current RAND method.";
-                PrintLock.unlock();
+                print_lock.unlock();
                 std::exit(1);
             } else if (error == 0) {
-                PrintLock.lock();
+                print_lock.lock();
                 std::cerr << "Other openssl error.";
-                PrintLock.unlock();
+                print_lock.unlock();
                 std::exit(1);
             }
 
@@ -80,27 +81,28 @@ namespace hussar {
 
     std::unordered_map<std::string, Session> sessions;
     std::mutex sessions_mtx;
+    std::unique_lock<std::mutex> sessions_lock(sessions_mtx);
 
     /**
      * Creates a session and returns its id
      */
-    std::string NewSession()
+    std::string create_session()
     {
-        sessions_mtx.lock();
+        sessions_lock.lock();
             Session s;
             std::string session_id = s.id;
             sessions[s.id] = std::move(s);
-        sessions_mtx.unlock();
+        sessions_lock.unlock();
         return session_id;
     }
 
     /**
      * reads value of session key if it exists and returns it, else returns empty string
      */
-    std::string ReadSessionData(const std::string& session_id, const std::string& key)
+    std::string read_session(const std::string& session_id, const std::string& key)
     {
         std::string data;
-        sessions_mtx.lock();
+        sessions_lock.lock();
             auto session_iter = sessions.find(session_id);
             if (session_iter != sessions.end()) {
                 auto session_data_iter = session_iter->second.data.find(key);
@@ -108,33 +110,33 @@ namespace hussar {
                     data = session_data_iter->second;
                 }
             }
-        sessions_mtx.unlock();
+        sessions_lock.unlock();
         return data;
     }
 
     /**
      * writes data to session if it exists then return true if the session data was overwritten or created
      */
-    bool WriteSessionData(const std::string& session_id, const std::string& key, const std::string& data)
+    bool write_session(const std::string& session_id, const std::string& key, const std::string& data)
     {
         bool success = false;
-        sessions_mtx.lock();
+        sessions_lock.lock();
             auto session_iter = sessions.find(session_id);
             if (session_iter != sessions.end()) {
                 session_iter->second.data[key] = data;
                 success = true;
             }
-        sessions_mtx.unlock();
+        sessions_lock.unlock();
         return success;
     }
 
     /**
      * deletes session data
      */
-    bool DeleteSessionData(const std::string& session_id, const std::string& key)
+    bool delete_session(const std::string& session_id, const std::string& key)
     {
         bool success = false;
-        sessions_mtx.lock();
+        sessions_lock.lock();
             auto session_iter = sessions.find(session_id);
             if (session_iter != sessions.end()) {
                 auto session_data_iter = session_iter->second.data.find(key);
@@ -143,35 +145,35 @@ namespace hussar {
                     success = true;
                 }
             }
-        sessions_mtx.unlock();
+        sessions_lock.unlock();
         return success;
     }
 
     /**
      * deletes session from session pool
      */
-    bool DeleteSession(const std::string& session_id)
+    bool destroy_session(const std::string& session_id)
     {
         bool success = false;
-        sessions_mtx.lock();
+        sessions_lock.lock();
             auto session_iter = sessions.find(session_id);
             if (session_iter != sessions.end()) {
                 sessions.erase(session_iter);
                 success = true;
             }
-        sessions_mtx.unlock();
+        sessions_lock.unlock();
         return success;
     }
 
     /**
      * returns whether or not the session exists
      */
-    bool SessionExists(const std::string& session_id)
+    bool session_exists(const std::string& session_id)
     {
         bool success = false;
-        sessions_mtx.lock();
+        sessions_lock.lock();
             success = sessions.find(session_id) != sessions.end();
-        sessions_mtx.unlock();
+        sessions_lock.unlock();
         return success;
     }
 };

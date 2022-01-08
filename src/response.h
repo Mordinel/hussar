@@ -59,54 +59,54 @@ namespace hussar {
 
     class Response {
     private:
-        std::string requestMethod;
+        Request& request;
 
     public:
-        std::unordered_map<std::string, std::string> Headers;
-        std::vector<Cookie> Cookies;
+        std::unordered_map<std::string, std::string> headers;
+        std::vector<Cookie> cookies;
         std::string proto;
         std::string code;
         std::string status;
         std::string body; 
 
         Response(Request& req)
-            : requestMethod(req.Method), proto("HTTP/1.1"), code("200"), status("OK")
+            : request(req), proto("HTTP/1.1"), code("200"), status("OK")
         {
             // get local time
             auto now = std::chrono::system_clock::now();
             auto time = std::chrono::system_clock::to_time_t(now);
-            auto localTime = *std::localtime(&time);
+            auto local_time = *std::localtime(&time);
             
             // format date for http output
-            std::ostringstream dateStream;
-            dateStream << std::put_time(&localTime, "%a, %d %b %Y %H:%M:%S");
-            std::string date = dateStream.str();
+            std::ostringstream date_stream;
+            date_stream << std::put_time(&local_time, "%a, %d %b %Y %H:%M:%S");
+            std::string date = date_stream.str();
 
-            this->Headers["Date"] = date;
-            this->Headers["Server"] = SERVER_NAME;
-            this->Headers["Connection"] = req.KeepAlive ? "keep-alive" : "close";
-            this->Headers["Content-Type"] = "text/html";
+            this->headers["Date"] = date;
+            this->headers["Server"] = SERVER_NAME;
+            this->headers["Connection"] = req.keep_alive ? "keep-alive" : "close";
+            this->headers["Content-Type"] = "text/html";
 
             bool update_session = false;
             // get session id
-            if (req.Cookies.find("id") != req.Cookies.end()) {
-                req.SessionID = req.Cookies["id"].value; 
-                if (not SessionExists(req.SessionID)) {
-                    req.SessionID = NewSession();
+            if (req.cookies.find("id") != req.cookies.end()) {
+                req.session_id = req.cookies["id"].value; 
+                if (not session_exists(req.session_id)) {
+                    req.session_id = create_session();
                     update_session = true;
                 }
             } else {
-                req.SessionID = NewSession();
+                req.session_id = create_session();
                 update_session = true;
             }
 
             // if new session, create it
             if (update_session) {
-                this->Cookies.emplace_back(Cookie{});
-                Cookie& c = this->Cookies[this->Cookies.size()-1];
+                this->cookies.emplace_back(Cookie{});
+                Cookie& c = this->cookies[this->cookies.size()-1];
                 c.name = "id";
-                c.value = req.SessionID;
-                c.HttpOnly = true;
+                c.value = req.session_id;
+                c.http_only = true;
             }
         }
 
@@ -117,51 +117,50 @@ namespace hussar {
         Response& operator=(const Response& resp) = delete;
 
         // transform field data into an HTTP response
-        std::string Serialize()
+        std::string serialize()
         {
-            std::ostringstream responseStream;
-            std::ostringstream bodyLengthStream;
+            std::ostringstream response_stream;
 
             // code status texts
             if (statuses.find(this->code) != statuses.end()) {
-                responseStream << this->proto << " " << this->code << " " << statuses[this->code] << "\n";
+                response_stream << this->proto << " " << this->code << " " << statuses[this->code] << "\n";
             } else if (this->status != "") {
-                responseStream << this->proto << " " << this->code << " " << this->status << "\n";
+                response_stream << this->proto << " " << this->code << " " << this->status << "\n";
             } else { // code not implemented and custom status is empty
                 this->code = "500";
-                responseStream << this->proto << " " << this->code << " " << statuses[this->code] << "\n";
-                this->Headers["Content-Type"] = "text/html";
+                response_stream << this->proto << " " << this->code << " " << statuses[this->code] << "\n";
+                this->headers["Content-Type"] = "text/html";
                 this->body = "<h1>500: " + statuses[this->code] + "</h1>";
             }
 
             // stored headers
-            for (auto& [key, data] : this->Headers) {
+            for (auto& [key, data] : this->headers) {
                 if (key != "") {
-                    responseStream << key << ": " << data << "\n";
+                    response_stream << key << ": " << data << "\n";
                 }
             }
 
             // set cookie headers
-            for (Cookie& cookie : this->Cookies) {
-                if (cookie.IsValid()) {
-                    responseStream << "Set-Cookie: " << cookie.Serialize() << "\n";
+            for (Cookie& cookie : this->cookies) {
+                if (cookie.is_valid()) {
+                    response_stream << "Set-Cookie: " << cookie.serialize() << "\n";
                 }
             }
 
             // content length header
-            if (requestMethod != "HEAD") {
-                responseStream << "Content-Length: " << body.size() << "\n";
+            if (this->request.method != "HEAD") {
+                response_stream << "Content-Length: " << body.size() << "\n";
             } else {
-                responseStream << "Content-Length: 0\n";
+                response_stream << "Content-Length: 0\n";
             }
 
-            responseStream << "\n";
+            response_stream << "\n";
 
-            if (requestMethod != "HEAD") {
-                responseStream << this->body;
+            if (this->request.method != "HEAD") {
+                response_stream << this->body;
             }
 
-            return responseStream.str();
+            return response_stream.str();
         }
     };
 };

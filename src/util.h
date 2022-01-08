@@ -30,8 +30,8 @@
 #define hus hussar
 
 namespace hussar {
-    std::mutex PrintMut;
-    std::unique_lock<std::mutex> PrintLock(PrintMut);
+    std::mutex print_mtx;
+    std::unique_lock<std::mutex> print_lock(print_mtx);
     std::unordered_map<std::string, std::string> mimes = {
         {"woff", "font/woff"},
         {"woff2", "font/woff2"},
@@ -54,7 +54,7 @@ namespace hussar {
     /**
      * performs url decoding on str
      */
-    std::string UrlDecode(const std::string& str)
+    std::string url_decode(const std::string& str)
     {
         char c;
         std::ostringstream oss;
@@ -77,7 +77,7 @@ namespace hussar {
     /**
      * performs html escaping on str
      */
-    std::string HtmlEscape(const std::string& str)
+    std::string html_escape(const std::string& str)
     {
         std::ostringstream oss;
         for (size_t i = 0; i < str.size(); ++i) {
@@ -112,7 +112,7 @@ namespace hussar {
     /**
      * strips terminal control chars from a string
      */
-    std::string TerminalString(const std::string& str)
+    std::string strip_terminal_chars(const std::string& str)
     {
         std::ostringstream oss;
     
@@ -137,7 +137,10 @@ namespace hussar {
         return oss.str();
     }
 
-    std::string StripString(const std::string& str)
+    /**
+     * Trims whitespace from the start and end of a string
+     */
+    std::string trim(const std::string& str)
     {
         std::ostringstream oss;
         size_t content_start = 0;
@@ -169,7 +172,7 @@ namespace hussar {
     /**
      * returns a string containing the mime time of the extension of the document string.
      */
-    std::string GetMime(std::filesystem::path& document) {
+    std::string get_mime(std::filesystem::path& document) {
         std::string extension = document.extension();
         if (extension.size() < 2) {
             return "application/octet-stream";
@@ -187,17 +190,17 @@ namespace hussar {
     /**
      * splits the string str into vector strVec, delimited by char c
      */
-    void SplitString(const std::string& str, char c, std::vector<std::string>& strVec)
+    void split_string(const std::string& str, char c, std::vector<std::string>& dest)
     {
         std::string::size_type i = 0;
         std::string::size_type j = str.find(c);
     
         while (j != std::string::npos) {
-            strVec.push_back(str.substr(i, j - i));
+            dest.push_back(str.substr(i, j - i));
             i = ++j;
             j = str.find(c, j);
             if (j == std::string::npos) {
-                strVec.push_back(str.substr(i, str.length()));
+                dest.push_back(str.substr(i, str.length()));
             }
         }
     }
@@ -205,18 +208,18 @@ namespace hussar {
     /**
      * for fatal errors that should kill the program.
      */
-    void Error(const std::string& message)
+    void fatal_error(const std::string& message)
     {
-        PrintLock.lock();
+        print_lock.lock();
             std::cerr << message << std::endl;
-        PrintLock.unlock();
+        print_lock.unlock();
         std::exit(1);
     }
 
     /**
      * returns true if the name is alphabetic + '_', else returns false
      */
-    bool ValidateParamName(const std::string& name)
+    bool validate_param_name(const std::string& name)
     {
         if (not name.size())
             return false;

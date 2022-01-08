@@ -19,25 +19,25 @@
 
 void redirect_home(hus::Request& req, hus::Response& resp) {
     resp.code = "302";
-    resp.Headers["Location"] = "/";
+    resp.headers["Location"] = "/";
 }
 
 void home(hus::Request& req, hus::Response& resp) {
-    if (hus::SessionExists(req.SessionID) && hus::ReadSessionData(req.SessionID, "username") != "") {
-        resp.body = "<h1>Welcome to the website, <b>" + hus::HtmlEscape(hus::ReadSessionData(req.SessionID, "username")) + "</b>!</h1><br><p>Click <a href=\"/logout\">HERE</a> to log out.</p>";
+    if (hus::session_exists(req.session_id) && hus::read_session(req.session_id, "username") != "") {
+        resp.body = "<h1>Welcome to the website, <b>" + hus::html_escape(hus::read_session(req.session_id, "username")) + "</b>!</h1><br><p>Click <a href=\"/logout\">HERE</a> to log out.</p>";
     } else {
         resp.body = "<h1>Welcome to the website!</h1><br><p>Click <a href=\"/login\">HERE</a> to go to the login page</p>";
     }
 }
 
 void login_page(hus::Request& req, hus::Response& resp) {
-    if (hus::SessionExists(req.SessionID) && hus::ReadSessionData(req.SessionID, "username") != "") {
+    if (hus::session_exists(req.session_id) && hus::read_session(req.session_id, "username") != "") {
         redirect_home(req, resp);
     }
 
     // multiline string
     resp.body = R"(
-<form action="/login" method="POST">
+<form action="/login" method="post">
 <label for="name">Username: </label>
 <input type="text" id="username" name="username" required><br>
 <label for="password">Password: </label>
@@ -46,32 +46,32 @@ void login_page(hus::Request& req, hus::Response& resp) {
     )";
 
     // checking if parameter exists
-    if (req.GET.find("message") != req.GET.end()) {
-        resp.body += "<br><p>" + hus::HtmlEscape(req.GET["message"]) + "</p>";
+    if (req.get.find("message") != req.get.end()) {
+        resp.body += "<br><p>" + hus::html_escape(req.get["message"]) + "</p>";
     }
 }
 
 void login(hus::Request& req, hus::Response& resp) {
-    if (hus::SessionExists(req.SessionID) && hus::ReadSessionData(req.SessionID, "username") != "") {
+    if (hus::session_exists(req.session_id) && hus::read_session(req.session_id, "username") != "") {
         redirect_home(req, resp);
     }
 
-    // Checking if POST parameters exist
-    if (req.POST.find("username") == req.POST.end()) goto login_redirect;
-    if (req.POST.find("password") == req.POST.end()) goto login_redirect;
+    // Checking if post parameters exist
+    if (req.post.find("username") == req.post.end()) goto login_redirect;
+    if (req.post.find("password") == req.post.end()) goto login_redirect;
 
     // TODO get creds from a db query and do a hash of some kind
-    if (req.POST["password"] != "lemon42") goto login_redirect; // TODO compute hash from given password and compare with hash from db
+    if (req.post["password"] != "lemon42") goto login_redirect; // TODO compute hash from given password and compare with hash from db
 
-    if (hus::SessionExists(req.SessionID)) {
-        if (hus::WriteSessionData(req.SessionID, "username", req.POST["username"])) {
+    if (hus::session_exists(req.session_id)) {
+        if (hus::write_session(req.session_id, "username", req.post["username"])) {
             redirect_home(req, resp);
         } else {
             goto login_redirect;
         }
     } else {
         resp.code = "302";
-        resp.Headers["Location"] = "/login?message=Please+enable+cookies.";
+        resp.headers["Location"] = "/login?message=Please+enable+cookies.";
     }
 
     return;
@@ -79,21 +79,21 @@ void login(hus::Request& req, hus::Response& resp) {
     // If anything here fails, return to the login page with a generic error
 login_redirect:
     resp.code = "302";
-    resp.Headers["Location"] = "/login?message=Failed+to+login.";
+    resp.headers["Location"] = "/login?message=Failed+to+login.";
 }
 
 void logout(hus::Request& req, hus::Response& resp) {
-    if (hus::SessionExists(req.SessionID)) {
-        if (hus::DeleteSessionData(req.SessionID, "username")) {
+    if (hus::session_exists(req.session_id)) {
+        if (hus::delete_session(req.session_id, "username")) {
             resp.code = "302";
-            resp.Headers["Location"] = "/login?message=Logged+out.";       
+            resp.headers["Location"] = "/login?message=Logged+out.";
         } else {
             resp.code = "302";
-            resp.Headers["Location"] = "/login?message=Not+logged+in.";       
+            resp.headers["Location"] = "/login?message=Not+logged+in.";
         }
     } else {
         resp.code = "302";
-        resp.Headers["Location"] = "/login?message=Please+enable+cookies.";       
+        resp.headers["Location"] = "/login?message=Please+enable+cookies.";
     }
 }
 
@@ -113,16 +113,16 @@ int main() {
     //hus::Hussar s("127.0.0.2", 8080, 0, true);
 
     // register routes
-    s.Router.DEFAULT(&redirect_home);       // default route is everything other than registered routes
-    s.Router.GET("/", &home);
-    s.Router.GET("/login", &login_page);
-    s.Router.POST("/login", &login);
-    s.Router.GET("/logout", &logout);
+    s.router.fallback(&redirect_home);       // fallback route is everything other than registered routes
+    s.router.get("/", &home);
+    s.router.get("/login", &login_page);
+    s.router.post("/login", &login);
+    s.router.get("/logout", &logout);
 
     // BLOCKING listen for the server
     // perhaps put in a thread for non-blocking style behaviour so
     // multiple hus::Hussar instances can exist in the same process
-    s.Listen();
+    s.serve();
 
     return 0;
 }

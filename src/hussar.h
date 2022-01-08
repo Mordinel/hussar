@@ -27,24 +27,24 @@ namespace hussar {
     class Hussar {
     private:
         int sockfd;                     // Server socket
-        sockaddr_in clientAddress;      // client addr struct
+        sockaddr_in client_address;      // client addr struct
 
         std::string host;
         unsigned short port;
-        ThreadPool threadpool;
+        ThreadPool thread_pool;
         bool verbose;
 
         SSL_CTX* ctx;
 
     public:
-        hussar::Router Router;
+        hussar::Router router;
 
     private:
 
         /**
          * handles a single client connection
          */
-        void handleConnection(int client, char* host, SSL* ssl) {
+        void handle_connection(int client, char* host, SSL* ssl) {
             // allocate buffer for service string
             char svc[NI_MAXSERV];
             memset(svc, 0, NI_MAXSERV);
@@ -53,9 +53,9 @@ namespace hussar {
             char buf[4096];
 
             if (this->verbose) {
-                PrintLock.lock();
+                print_lock.lock();
                     std::cout << host <<" connected" << std::endl;
-                PrintLock.unlock();
+                print_lock.unlock();
             }
 
             // read and handle bytes until the connection ends
@@ -74,9 +74,9 @@ namespace hussar {
                 switch (status) {
                     case -1: // connection error
                         if (this->verbose) {
-                            PrintLock.lock();
+                            print_lock.lock();
                                std::cerr << "There was a connection issue with " << host << std::endl;
-                            PrintLock.unlock();
+                            print_lock.unlock();
                         }
                         goto srv_disconnect; // disconnect
                         break;
@@ -88,22 +88,22 @@ namespace hussar {
                         Request req{bufStr, host};
                         Response resp{req};
  
-                        this->Router.Route(req, resp);
+                        this->router.route(req, resp);
 
                         // we do a little logging
                         if (this->verbose) {
-                            PrintLock.lock();
-                            std::cout << req.RemoteHost <<
-                                "\t" << resp.Headers["Date"] <<
-                                "\t" << TerminalString(req.Method) <<
+                            print_lock.lock();
+                            std::cout << req.remote_host <<
+                                "\t" << resp.headers["Date"] <<
+                                "\t" << strip_terminal_chars(req.method) <<
                                 "\t" << resp.code <<
-                                "\t" << TerminalString(req.DocumentOriginal) <<
-                                "\t" << TerminalString(req.UserAgent) <<
+                                "\t" << strip_terminal_chars(req.document_raw) <<
+                                "\t" << strip_terminal_chars(req.user_agent) <<
                                 "\n";
-                            PrintLock.unlock();
+                            print_lock.unlock();
                         }
 
-                        std::string response = resp.Serialize();
+                        std::string response = resp.serialize();
                         if (ssl) {
                             SSL_write(ssl, response.c_str(), response.size());
                         } else {
@@ -111,7 +111,7 @@ namespace hussar {
                         }
 
                         // if keep alive
-                        if (req.KeepAlive) {
+                        if (req.keep_alive) {
                             continue;
                         }
 
@@ -122,9 +122,9 @@ namespace hussar {
 
         srv_disconnect:
             if (this->verbose) {
-                PrintLock.lock();
+                print_lock.lock();
                     std::cout << host << " disconnected" << std::endl;
-                PrintLock.unlock();
+                print_lock.unlock();
             }
 
             if (ssl) {
@@ -143,7 +143,7 @@ namespace hussar {
 
             this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
             if (this->sockfd < 0) {
-                Error("ERROR opening socket");
+                fatal_error("ERROR opening socket");
             }
 
             int reuseAddrOpt = 1;
@@ -155,7 +155,7 @@ namespace hussar {
             inet_pton(AF_INET, this->host.c_str(), &hint.sin_addr);
 
             if (bind(this->sockfd, (sockaddr*)&hint, sizeof(hint)) < 0) {
-                Error("ERROR can't bind to ip/port");
+                fatal_error("ERROR can't bind to ip/port");
             }
         }
 
@@ -169,17 +169,17 @@ namespace hussar {
             this->ctx = SSL_CTX_new(method);
             if (not this->ctx) {
                 ERR_print_errors_fp(stderr);
-                Error("ERROR can't create SSL context");
+                fatal_error("ERROR can't create SSL context");
             }
 
             if (SSL_CTX_use_certificate_file(this->ctx, cert.c_str(), SSL_FILETYPE_PEM) <= 0) {
                 ERR_print_errors_fp(stderr);
-                Error("ERROR can't use certificate pem file: " + cert);
+                fatal_error("ERROR can't use certificate pem file: " + cert);
             }
 
             if (SSL_CTX_use_PrivateKey_file(this->ctx, privkey.c_str(), SSL_FILETYPE_PEM) <= 0) {
                 ERR_print_errors_fp(stderr);
-                Error("can't use privatekey pem file: " + privkey);
+                fatal_error("can't use privatekey pem file: " + privkey);
             }
 
         }
@@ -190,9 +190,11 @@ namespace hussar {
          * binds a host:port socket
          */
         Hussar(const std::string& host, const unsigned short port, unsigned int threadcount, bool verbose)
-            : host(host), port(port), threadpool(threadcount), verbose(verbose), ctx(nullptr)
+            : host(host), port(port), thread_pool(threadcount), verbose(verbose), ctx(nullptr)
         {
-            PrintLock.unlock();
+            print_lock.unlock();
+            openssl_rand_lock.unlock();
+            sessions_lock.unlock();
             this->init_socket();
         }
 
@@ -200,13 +202,15 @@ namespace hussar {
          * binds a host:port SSL socket
          */
         Hussar(const std::string& host, const unsigned short port, unsigned int threadcount, const std::string& privkey, const std::string& cert, bool verbose)
-            : host(std::move(host)), port(port), threadpool(threadcount), verbose(verbose), ctx(nullptr)
+            : host(std::move(host)), port(port), thread_pool(threadcount), verbose(verbose), ctx(nullptr)
         {
-            PrintLock.unlock();
+            print_lock.unlock();
+            openssl_rand_lock.unlock();
+            sessions_lock.unlock();
             if (this->verbose) {
-                PrintLock.lock();
+                print_lock.lock();
                     std::cout << "SSL ENABLED" << std::endl;
-                PrintLock.unlock();
+                print_lock.unlock();
             }
             this->init_socket();
             this->init_ssl_context(cert, privkey);
@@ -232,36 +236,36 @@ namespace hussar {
         /**
          * listen for incoming connections and spawn threads for each connection
          */
-        void Listen()
+        void serve()
         {
             if (listen(this->sockfd, SOMAXCONN) < 0) {
-                Error("ERROR can't listen");
+                fatal_error("ERROR can't listen");
             }
         
             while (true) {
-                socklen_t clientSize = sizeof(this->clientAddress);
+                socklen_t clientSize = sizeof(this->client_address);
                 // accept connections
-                int clientSocket = accept(this->sockfd, (sockaddr*)&this->clientAddress, &clientSize);
+                int client_socket = accept(this->sockfd, (sockaddr*)&this->client_address, &clientSize);
 
                 // get the host address of the tcp client
                 char* host = (char*)std::calloc(NI_MAXHOST, sizeof(char));
-                inet_ntop(AF_INET, &this->clientAddress.sin_addr, host, NI_MAXHOST);
+                inet_ntop(AF_INET, &this->client_address.sin_addr, host, NI_MAXHOST);
 
-                if (clientSocket < 0) {
+                if (client_socket < 0) {
                     if (this->verbose) {
-                        PrintLock.lock();
+                        print_lock.lock();
                             std::cerr << "ERROR problem with client connection" << std::endl;
-                        PrintLock.unlock();
+                        print_lock.unlock();
                     }
                     std::free(host);
                 } else if (this->ctx) {
                     SSL* ssl = SSL_new(this->ctx);
-                    SSL_set_fd(ssl, clientSocket);
+                    SSL_set_fd(ssl, client_socket);
                     if (SSL_accept(ssl) > 0) {
-                        this->threadpool.Dispatch(&Hussar::handleConnection, this, clientSocket, host, ssl);
+                        this->thread_pool.Dispatch(&Hussar::handle_connection, this, client_socket, host, ssl);
                     }
                 } else {
-                    this->threadpool.Dispatch(&Hussar::handleConnection, this, clientSocket, host, nullptr);
+                    this->thread_pool.Dispatch(&Hussar::handle_connection, this, client_socket, host, nullptr);
                 }
             }
         }
