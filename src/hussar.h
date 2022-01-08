@@ -262,10 +262,10 @@ namespace hussar {
                     SSL* ssl = SSL_new(this->ctx);
                     SSL_set_fd(ssl, client_socket);
                     if (SSL_accept(ssl) > 0) {
-                        this->thread_pool.Dispatch(&Hussar::handle_connection, this, client_socket, host, ssl);
+                        this->thread_pool.dispatch(&Hussar::handle_connection, this, client_socket, host, ssl);
                     }
                 } else {
-                    this->thread_pool.Dispatch(&Hussar::handle_connection, this, client_socket, host, nullptr);
+                    this->thread_pool.dispatch(&Hussar::handle_connection, this, client_socket, host, nullptr);
                 }
             }
         }
