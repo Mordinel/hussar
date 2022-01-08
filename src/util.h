@@ -184,7 +184,7 @@ namespace hussar {
         auto mimeIter = mimes.find(extension);
     
         if (mimeIter == mimes.end()) {
-            return mimes.begin()->second;
+            return "application/octet-stream";
         }
 
         return mimeIter->second;
