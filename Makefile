@@ -1,7 +1,6 @@
 # source files
 SOURCES      := src/*.cpp
 HEADERS      := src/*.h
-PCH_SOURCE   := src/pch.h
 
 # compiler flags
 CFLAGS       := -std=c++20 -Wall -O2 -pthread -lcrypto -lssl -I ./include/

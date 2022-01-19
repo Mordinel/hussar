@@ -18,7 +18,7 @@
 #ifndef HUSSAR_SESSION_H
 #define HUSSAR_SESSION_H
 
-#include "pch.h"
+#include "libs.h"
 
 #define SESSION_ID_LEN 32
 

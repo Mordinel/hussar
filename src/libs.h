@@ -15,8 +15,8 @@
 *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef HUSSAR_PCH_H
-#define HUSSAR_PCH_H
+#ifndef HUSSAR_LIBS_H
+#define HUSSAR_LIBS_H
 
 // c includes
 #include <cstdlib>          // exit
