@@ -23,7 +23,7 @@ void redirect_home(hus::Request& req, hus::Response& resp) {
 }
 
 void home(hus::Request& req, hus::Response& resp) {
-    if (hus::session_exists(req.session_id) && hus::read_session(req.session_id, "username") != "") {
+    if (hus::read_session(req.session_id, "username") != "") {
         resp.body = "<h1>Welcome to the website, <b>" + hus::html_escape(hus::read_session(req.session_id, "username")) + "</b>!</h1><br><p>Click <a href=\"/logout\">HERE</a> to log out.</p>";
     } else {
         resp.body = "<h1>Welcome to the website!</h1><br><p>Click <a href=\"/login\">HERE</a> to go to the login page</p>";
@@ -31,8 +31,9 @@ void home(hus::Request& req, hus::Response& resp) {
 }
 
 void login_page(hus::Request& req, hus::Response& resp) {
-    if (hus::session_exists(req.session_id) && hus::read_session(req.session_id, "username") != "") {
+    if (hus::read_session(req.session_id, "username") != "") {
         redirect_home(req, resp);
+        return;
     }
 
     // multiline string
@@ -52,8 +53,9 @@ void login_page(hus::Request& req, hus::Response& resp) {
 }
 
 void login(hus::Request& req, hus::Response& resp) {
-    if (hus::session_exists(req.session_id) && hus::read_session(req.session_id, "username") != "") {
+    if (hus::read_session(req.session_id, "username") != "") {
         redirect_home(req, resp);
+        return;
     }
 
     // Checking if post parameters exist
@@ -63,15 +65,10 @@ void login(hus::Request& req, hus::Response& resp) {
     // TODO get creds from a db query and do a hash of some kind
     if (req.post["password"] != "lemon42") goto login_redirect; // TODO compute hash from given password and compare with hash from db
 
-    if (hus::session_exists(req.session_id)) {
-        if (hus::write_session(req.session_id, "username", req.post["username"])) {
-            redirect_home(req, resp);
-        } else {
-            goto login_redirect;
-        }
+    if (hus::write_session(req.session_id, "username", req.post["username"])) {
+        redirect_home(req, resp);
     } else {
-        resp.code = "302";
-        resp.headers["Location"] = "/login?message=Please+enable+cookies.";
+        goto login_redirect;
     }
 
     return;
@@ -83,17 +80,11 @@ login_redirect:
 }
 
 void logout(hus::Request& req, hus::Response& resp) {
-    if (hus::session_exists(req.session_id)) {
-        if (hus::delete_session(req.session_id, "username")) {
-            resp.code = "302";
-            resp.headers["Location"] = "/login?message=Logged+out.";
-        } else {
-            resp.code = "302";
-            resp.headers["Location"] = "/login?message=Not+logged+in.";
-        }
+    resp.code = "302";
+    if (hus::delete_session(req.session_id, "username")) {
+        resp.headers["Location"] = "/login?message=Logged+out.";
     } else {
-        resp.code = "302";
-        resp.headers["Location"] = "/login?message=Please+enable+cookies.";
+        resp.headers["Location"] = "/login?message=Not+logged+in.";
     }
 }
 
