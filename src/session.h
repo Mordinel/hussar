@@ -15,8 +15,7 @@
 *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef HUSSAR_SESSION_H
-#define HUSSAR_SESSION_H
+#pragma once
 
 #include "libs.h"
 
@@ -178,4 +177,3 @@ namespace hussar {
     }
 };
 
-#endif

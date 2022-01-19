@@ -15,8 +15,7 @@
 *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef HUSSAR_UTIL_H
-#define HUSSAR_UTIL_H
+#pragma once
 
 #include <unordered_map>
 #include <iostream>
@@ -238,4 +237,3 @@ namespace hussar {
     }
 }
 
-#endif

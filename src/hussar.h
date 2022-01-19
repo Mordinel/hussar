@@ -15,8 +15,7 @@
 *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef HUSSAR_H
-#define HUSSAR_H
+#pragma once
 
 #include "libs.h"
 #include "request.h"
@@ -272,4 +271,3 @@ namespace hussar {
     };
 }
 
-#endif

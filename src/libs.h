@@ -15,8 +15,7 @@
 *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef HUSSAR_LIBS_H
-#define HUSSAR_LIBS_H
+#pragma once
 
 // c includes
 #include <cstdlib>          // exit
@@ -41,4 +40,3 @@
 #include "util.h"                    // utilities
 #include "thread_pool/thread_pool.h" // thread management
 
-#endif

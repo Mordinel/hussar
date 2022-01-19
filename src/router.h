@@ -15,8 +15,7 @@
 *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef HUSSAR_ROUTER_H
-#define HUSSAR_ROUTER_H
+#pragma once
 
 #include "hussar.h"
 
@@ -136,4 +135,3 @@ namespace hussar {
     };
 };
 
-#endif
