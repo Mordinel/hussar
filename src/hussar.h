@@ -32,7 +32,7 @@ namespace hussar {
         hussar::Config config;
         ThreadPool thread_pool;
 
-        SSL_CTX* ctx;
+        SSL_CTX* ssl_ctx;
 
     public:
         hussar::Router router;
@@ -164,18 +164,18 @@ namespace hussar {
             OpenSSL_add_all_algorithms();
 
             const SSL_METHOD* method = TLS_server_method();
-            this->ctx = SSL_CTX_new(method);
-            if (not this->ctx) {
+            this->ssl_ctx = SSL_CTX_new(method);
+            if (not this->ssl_ctx) {
                 ERR_print_errors_fp(stderr);
                 fatal_error("ERROR can't create SSL context");
             }
 
-            if (SSL_CTX_use_certificate_file(this->ctx, cert.c_str(), SSL_FILETYPE_PEM) <= 0) {
+            if (SSL_CTX_use_certificate_file(this->ssl_ctx, cert.c_str(), SSL_FILETYPE_PEM) <= 0) {
                 ERR_print_errors_fp(stderr);
                 fatal_error("ERROR can't use certificate pem file: " + cert);
             }
 
-            if (SSL_CTX_use_PrivateKey_file(this->ctx, privkey.c_str(), SSL_FILETYPE_PEM) <= 0) {
+            if (SSL_CTX_use_PrivateKey_file(this->ssl_ctx, privkey.c_str(), SSL_FILETYPE_PEM) <= 0) {
                 ERR_print_errors_fp(stderr);
                 fatal_error("can't use privatekey pem file: " + privkey);
             }
@@ -185,7 +185,7 @@ namespace hussar {
     public:
 
         Hussar(Config& config)
-            : config(std::move(config)), thread_pool(this->config.thread_count), ctx(nullptr)
+            : config(std::move(config)), thread_pool(this->config.thread_count), ssl_ctx(nullptr)
         {
             print_lock.unlock();
             openssl_rand_lock.unlock();
@@ -203,18 +203,16 @@ namespace hussar {
                 this->init_ssl_context(this->config.certificate, this->config.private_key);
             }
 
-            if (this->config.verbose) {
-                // print link
-                print_lock.lock();
-                    std::cout << "Server available at: ";
-                    if (this->ctx) { // if ssl
-                        std::cout << "https://";
-                    } else {
-                        std::cout << "http://";
-                    }
-                    std::cout << this->config.host << ":" << this->config.port << "/\n";
-                print_lock.unlock();
-            }
+            // print link
+            print_lock.lock();
+                std::cout << "Server at: ";
+                if (this->ssl_ctx) { // if ssl
+                    std::cout << "https://";
+                } else {
+                    std::cout << "http://";
+                }
+                std::cout << this->config.host << ":" << this->config.port << "/\n";
+            print_lock.unlock();
         }
 
         // delete copy constructors
@@ -226,8 +224,8 @@ namespace hussar {
         // closes the server socket
         ~Hussar()
         {
-            if (this->ctx) {
-                SSL_CTX_free(this->ctx);
+            if (this->ssl_ctx) {
+                SSL_CTX_free(this->ssl_ctx);
                 ERR_free_strings();
                 EVP_cleanup();
             }
@@ -259,8 +257,8 @@ namespace hussar {
                         print_lock.unlock();
                     }
                     std::free(host);
-                } else if (this->ctx) {
-                    SSL* ssl = SSL_new(this->ctx);
+                } else if (this->ssl_ctx) {
+                    SSL* ssl = SSL_new(this->ssl_ctx);
                     SSL_set_fd(ssl, client_socket);
                     if (SSL_accept(ssl) > 0) {
                         this->thread_pool.dispatch(&Hussar::handle_connection, this, client_socket, host, ssl);
