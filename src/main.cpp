@@ -109,11 +109,11 @@ void web_server(hus::Request& req, hus::Response& resp)
     // prints the GET and POST request parameters in verbose mode
     if (VERBOSE) {
         hus::print_lock.lock();
-        for (auto& p : req.get) {
-            std::cout << "GET[" << hus::strip_terminal_chars(p.first) << "] = " << hus::strip_terminal_chars(p.second) << "\n";
+        for (auto& [key, value] : req.get) {
+            std::cout << "GET[" << hus::strip_terminal_chars(key) << "] = " << hus::strip_terminal_chars(value) << "\n";
         }
-        for (auto& p : req.post) {
-            std::cout << "POST[" << hus::strip_terminal_chars(p.first) << "] = " << hus::strip_terminal_chars(p.second) << "\n";
+        for (auto& [key, value] : req.post) {
+            std::cout << "POST[" << hus::strip_terminal_chars(key) << "] = " << hus::strip_terminal_chars(value) << "\n";
         }
         hus::print_lock.unlock();
     }
