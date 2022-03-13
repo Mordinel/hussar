@@ -202,6 +202,19 @@ namespace hussar {
 
                 this->init_ssl_context(this->config.certificate, this->config.private_key);
             }
+
+            if (this->config.verbose) {
+                // print link
+                print_lock.lock();
+                    std::cout << "Server available at: ";
+                    if (this->ctx) { // if ssl
+                        std::cout << "https://";
+                    } else {
+                        std::cout << "http://";
+                    }
+                    std::cout << this->config.host << ":" << this->config.port << "/\n";
+                print_lock.unlock();
+            }
         }
 
         // delete copy constructors
