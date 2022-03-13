@@ -182,11 +182,12 @@ int main(int argc, char* argv[])
        }
     }
 
-
+    // if the paths are empty or one of the files don't exist or one of the files is not a regular file,
+    //     use no ssl by setting the private key and certificate strings to empty strings.
     if (
-        config.private_key == "" && config.certificate == "" &&
-        std::filesystem::exists(config.private_key) && std::filesystem::exists(config.certificate) &&
-        std::filesystem::is_regular_file(config.private_key) && std::filesystem::is_regular_file(config.certificate)
+        config.private_key == "" || config.certificate == "" ||
+        not std::filesystem::exists(config.private_key) || not std::filesystem::exists(config.certificate) ||
+        not std::filesystem::is_regular_file(config.private_key) || not std::filesystem::is_regular_file(config.certificate)
     ) {
         config.private_key = "";
         config.certificate = "";
