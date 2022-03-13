@@ -89,19 +89,16 @@ void logout(hus::Request& req, hus::Response& resp) {
 }
 
 int main() {
+    hus::Config config;
+    config.host         = "127.0.0.1"; // Socket Host
+    config.port         = 8443;        // Socket Port
+    config.thread_count = 0;           // Thread count
+    config.private_key  = "key.pem";   // SSL Private key
+    config.certificate  = "cert.pem";  // SSL Public key
+    config.verbose      = true;        // Verbosity enabled
 
-    // initialize HUSSAR server
-    //            Socket Host
-    //            |            Socket Port
-    //            |            |     Thread count (0 is default count)
-    //            |            |     |  SSL Private key
-    //            |            |     |  |          SSL public cert
-    //            |            |     |  |          |           Verbosity enabled
-    //            |            |     |  |          |           |
-    hus::Hussar s("127.0.0.2", 8443, 0, "key.pem", "cert.pem", true);
-    
-    // non-ssl constructor is available too
-    //hus::Hussar s("127.0.0.2", 8080, 0, true);
+    // set config.private_key and config.certificate to "" for no ssl
+    hus::Hussar s(config);
 
     // register routes
     s.router.fallback(&redirect_home);       // fallback route is everything other than registered routes

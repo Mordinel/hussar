@@ -21,6 +21,7 @@
 #include "request.h"
 #include "response.h"
 #include "router.h"
+#include "config.h"
 
 namespace hussar {
     class Hussar {
@@ -28,10 +29,8 @@ namespace hussar {
         int sockfd;                     // Server socket
         sockaddr_in client_address;      // client addr struct
 
-        std::string host;
-        unsigned short port;
+        hussar::Config config;
         ThreadPool thread_pool;
-        bool verbose;
 
         SSL_CTX* ctx;
 
@@ -51,7 +50,7 @@ namespace hussar {
             // allocate a buffer for recieved data
             char buf[4096];
 
-            if (this->verbose) {
+            if (this->config.verbose) {
                 print_lock.lock();
                     std::cout << host <<" connected" << std::endl;
                 print_lock.unlock();
@@ -72,7 +71,7 @@ namespace hussar {
         
                 switch (status) {
                     case -1: // connection error
-                        if (this->verbose) {
+                        if (this->config.verbose) {
                             print_lock.lock();
                                std::cerr << "There was a connection issue with " << host << std::endl;
                             print_lock.unlock();
@@ -90,7 +89,7 @@ namespace hussar {
                         this->router.route(req, resp);
 
                         // we do a little logging
-                        if (this->verbose) {
+                        if (this->config.verbose) {
                             print_lock.lock();
                             std::cout << req.remote_host <<
                                 "\t" << resp.headers["Date"] <<
@@ -120,7 +119,7 @@ namespace hussar {
             }
 
         srv_disconnect:
-            if (this->verbose) {
+            if (this->config.verbose) {
                 print_lock.lock();
                     std::cout << host << " disconnected" << std::endl;
                 print_lock.unlock();
@@ -136,8 +135,8 @@ namespace hussar {
 
         void init_socket()
         {
-            if (this->verbose) {
-                std::cout << "Binding socket " << this->host << ":" << this->port << std::endl;
+            if (this->config.verbose) {
+                std::cout << "Binding socket " << this->config.host << ":" << this->config.port << std::endl;
             }
 
             this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -150,8 +149,8 @@ namespace hussar {
 
             sockaddr_in hint;
             hint.sin_family = AF_INET;
-            hint.sin_port = htons(this->port);
-            inet_pton(AF_INET, this->host.c_str(), &hint.sin_addr);
+            hint.sin_port = htons(this->config.port);
+            inet_pton(AF_INET, this->config.host.c_str(), &hint.sin_addr);
 
             if (bind(this->sockfd, (sockaddr*)&hint, sizeof(hint)) < 0) {
                 fatal_error("ERROR can't bind to ip/port");
@@ -185,34 +184,24 @@ namespace hussar {
 
     public:
 
-        /**
-         * binds a host:port socket
-         */
-        Hussar(const std::string& host, const unsigned short port, unsigned int threadcount, bool verbose)
-            : host(host), port(port), thread_pool(threadcount), verbose(verbose), ctx(nullptr)
+        Hussar(Config& config)
+            : config(std::move(config)), thread_pool(this->config.thread_count), ctx(nullptr)
         {
             print_lock.unlock();
             openssl_rand_lock.unlock();
             sessions_lock.unlock();
             this->init_socket();
-        }
 
-        /**
-         * binds a host:port SSL socket
-         */
-        Hussar(const std::string& host, const unsigned short port, unsigned int threadcount, const std::string& privkey, const std::string& cert, bool verbose)
-            : host(std::move(host)), port(port), thread_pool(threadcount), verbose(verbose), ctx(nullptr)
-        {
-            print_lock.unlock();
-            openssl_rand_lock.unlock();
-            sessions_lock.unlock();
-            if (this->verbose) {
-                print_lock.lock();
-                    std::cout << "SSL ENABLED" << std::endl;
-                print_lock.unlock();
+            // if ssl
+            if (this->config.certificate != "" && this->config.private_key != "") {
+                if (this->config.verbose) {
+                    print_lock.lock();
+                        std::cout << "SSL ENABLED" << std::endl;
+                    print_lock.unlock();
+                }
+
+                this->init_ssl_context(this->config.certificate, this->config.private_key);
             }
-            this->init_socket();
-            this->init_ssl_context(cert, privkey);
         }
 
         // delete copy constructors
@@ -251,7 +240,7 @@ namespace hussar {
                 inet_ntop(AF_INET, &this->client_address.sin_addr, host, NI_MAXHOST);
 
                 if (client_socket < 0) {
-                    if (this->verbose) {
+                    if (this->config.verbose) {
                         print_lock.lock();
                             std::cerr << "ERROR problem with client connection" << std::endl;
                         print_lock.unlock();

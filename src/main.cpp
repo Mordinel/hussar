@@ -121,11 +121,13 @@ void web_server(hus::Request& req, hus::Response& resp)
 
 int main(int argc, char* argv[])
 {
-    std::string host = "127.0.0.1";
-    unsigned short port = 8080;
-    unsigned int threads = 0; // 0 defaults to max hardware threads
-    std::string privkey = "";
-    std::string certificate = "";
+    hus::Config config;
+    config.host         = "127.0.0.1";
+    config.port         = 8080;
+    config.thread_count = 0; // 0 defaults to max hardware threads
+    config.private_key  = "";
+    config.certificate  = "";
+    config.verbose      = false;
 
     std::stringstream ss;
 
@@ -139,38 +141,39 @@ int main(int argc, char* argv[])
 
             case 'v':
                 VERBOSE = true;
+                config.verbose = true;
                 break;
 
             case 'i':
-                host = optarg;
+                config.host = optarg;
                 break;
 
             case 'p':
                 ss.clear();
                 ss << optarg;
-                ss >> port;
+                ss >> config.port;
                 if (ss.fail()) {
                     std::cerr << "Error: " << optarg << " is not a valid port number, defaulting to (8080)\n";
-                    port = 8080;
+                    config.port = 8080;
                 }
                 break;
 
             case 't':
                 ss.clear();
                 ss << optarg;
-                ss >> threads;
+                ss >> config.thread_count;
                 if (ss.fail()) {
                     std::cerr << "Error: " << optarg << " is not a valid value for thread count, defaulting to (0)\n";
-                    threads = 0;
+                    config.thread_count = 0;
                 }
                 break;
  
             case 'k':
-                privkey = optarg;
+                config.private_key = optarg;
                 break;
 
             case 'c':
-                certificate = optarg;
+                config.certificate = optarg;
                 break;
 
             case 'd':
@@ -179,22 +182,19 @@ int main(int argc, char* argv[])
        }
     }
 
-    hus::Hussar* server;
 
     if (
-        privkey != "" && certificate != "" &&
-        std::filesystem::exists(privkey) && std::filesystem::exists(certificate) &&
-        std::filesystem::is_regular_file(privkey) && std::filesystem::is_regular_file(certificate)
+        config.private_key == "" && config.certificate == "" &&
+        std::filesystem::exists(config.private_key) && std::filesystem::exists(config.certificate) &&
+        std::filesystem::is_regular_file(config.private_key) && std::filesystem::is_regular_file(config.certificate)
     ) {
-        server = new hus::Hussar(host, port, threads, privkey, certificate, VERBOSE);
-    } else {
-        server = new hus::Hussar(host, port, threads, VERBOSE);
+        config.private_key = "";
+        config.certificate = "";
     }
 
-    server->router.fallback(&web_server);
-    server->serve();
-
-    delete server;
+    hus::Hussar server(config);
+    server.router.fallback(&web_server);
+    server.serve();
 
     return 0;
 }
