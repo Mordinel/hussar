@@ -16,7 +16,7 @@
 */
 
 #pragma once
-#include <functional>
+
 #include "hussar.h"
 
 namespace hussar {

@@ -33,6 +33,7 @@
 
 // cpp includes
 #include <filesystem>       // file reading
+#include <functional>       // functional programming
 #include <fstream>          // file streams
 #include <thread>           // threading
 #include <regex>            // path stuff
