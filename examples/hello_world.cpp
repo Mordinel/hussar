@@ -83,6 +83,7 @@ void logout(hus::Request& req, hus::Response& resp) {
     resp.code = "302";
     if (hus::delete_session(req.session_id, "username")) {
         resp.headers["Location"] = "/login?message=Logged+out.";
+        hus::destroy_session(req.session_id);
     } else {
         resp.headers["Location"] = "/login?message=Not+logged+in.";
     }
