@@ -71,6 +71,36 @@ namespace hussar {
             return *this;
         }
 
+        bool contains(const std::string& str)
+        {
+            return this->data.contains(str);
+        }
+
+        template <typename T>
+        auto erase(T pos)
+        {
+            return this->data.erase(pos);
+        }
+
+        auto find(const std::string& str)
+        {
+            return this->data.find(str);
+        }
+
+        auto begin()
+        {
+            this->data.begin();
+        }
+
+        auto end()
+        {
+            return this->data.end();
+        }
+
+        std::string& operator[](const std::string& str) {
+            return this->data[str];
+        }
+
         // delete copy constructors
         Session(Session& old_session) = delete;
         Session(const Session& old_session) = delete;
@@ -102,11 +132,9 @@ namespace hussar {
     {
         std::string data;
         sessions_lock.lock();
-            auto session_iter = sessions.find(session_id);
-            if (session_iter != sessions.end()) {
-                auto session_data_iter = session_iter->second.data.find(key);
-                if (session_data_iter != session_iter->second.data.end()) {
-                    data = session_data_iter->second;
+            if (sessions.contains(session_id)) {
+                if (sessions[session_id].contains(key)) {
+                    data = sessions[session_id][key];
                 }
             }
         sessions_lock.unlock();
@@ -120,9 +148,8 @@ namespace hussar {
     {
         bool success = false;
         sessions_lock.lock();
-            auto session_iter = sessions.find(session_id);
-            if (session_iter != sessions.end()) {
-                session_iter->second.data[key] = data;
+            if (sessions.contains(session_id)) {
+                sessions[session_id][key] = data;
                 success = true;
             }
         sessions_lock.unlock();
@@ -136,11 +163,10 @@ namespace hussar {
     {
         bool success = false;
         sessions_lock.lock();
-            auto session_iter = sessions.find(session_id);
-            if (session_iter != sessions.end()) {
-                auto session_data_iter = session_iter->second.data.find(key);
-                if (session_data_iter != session_iter->second.data.end()) {
-                    session_iter->second.data.erase(session_data_iter);
+            if (sessions.contains(session_id)) {
+                auto session_data_iter = sessions[session_id].find(key);
+                if (session_data_iter != sessions[session_id].end()) {
+                    sessions[session_id].erase(session_data_iter);
                     success = true;
                 }
             }
@@ -155,10 +181,8 @@ namespace hussar {
     {
         bool success = false;
         sessions_lock.lock();
-            auto session_iter = sessions.find(session_id);
-            if (session_iter != sessions.end()) {
-                sessions.erase(session_iter);
-                success = true;
+            if (sessions.contains(session_id)) {
+                sessions.erase(session_id);
             }
         sessions_lock.unlock();
         return success;
@@ -171,7 +195,7 @@ namespace hussar {
     {
         bool success = false;
         sessions_lock.lock();
-            success = sessions.find(session_id) != sessions.end();
+            success = sessions.contains(session_id);
         sessions_lock.unlock();
         return success;
     }
