@@ -87,7 +87,7 @@ namespace hussar {
         /**
          * handles a single client connection
          */
-        void handle_connection(int client, char* host, SSL* ssl) {
+        void handle_connection(int client, SSL* ssl, char* host) {
             // allocate buffer for service string
             char svc[NI_MAXSERV];
             memset(svc, 0, NI_MAXSERV);
@@ -295,10 +295,10 @@ namespace hussar {
                     SSL* ssl = SSL_new(this->ssl_ctx);
                     SSL_set_fd(ssl, client_socket);
                     if (SSL_accept(ssl) > 0) {
-                        this->thread_pool.dispatch(&Hussar::handle_connection, this, client_socket, host, ssl);
+                        this->thread_pool.dispatch(&Hussar::handle_connection, this, client_socket, ssl, host);
                     }
                 } else {
-                    this->thread_pool.dispatch(&Hussar::handle_connection, this, client_socket, host, nullptr);
+                    this->thread_pool.dispatch(&Hussar::handle_connection, this, client_socket, nullptr, host);
                 }
             }
         }
