@@ -138,7 +138,7 @@ int main() {
     config.thread_count = 0;           // Thread count
     config.private_key  = "key.pem";   // SSL Private key
     config.certificate  = "cert.pem";  // SSL Public key
-    config.verbose      = true;        // Verbosity enabled
+    config.verbosity    = 1;           // Verbosity enabled
 
     // set config.private_key and config.certificate to "" for no ssl
     hus::Hussar s(config);

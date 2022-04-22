@@ -34,8 +34,53 @@ namespace hussar {
 
         SSL_CTX* ssl_ctx;
 
-    public:
-        //hussar::Router router;
+        /**
+         * read from SSL socket if possible else read from standard socket
+         */
+        ssize_t readsock(int client, SSL* ssl, char* dst, size_t count)
+        {
+            if (ssl) {
+                return SSL_read(ssl, dst, count);
+            }
+            return read(client, dst, count);
+        }
+
+        /**
+         * send data to SSL socket if possible else send to regular socket
+         */
+        ssize_t writesock(int client, SSL* ssl, const char* payload, size_t count)
+        {
+            if (ssl) {
+                return SSL_write(ssl, payload, count);
+            }
+            return write(client, payload, count);
+        }
+
+        /**
+         * do logging
+         */
+        void log(std::string& raw_req, Request& req, Response& resp)
+        {
+            if (this->config.verbosity == 1) {
+                print_lock.lock();
+                std::cout << req.remote_host <<
+                    "\t" << resp.headers["Date"] <<
+                    "\t" << strip_terminal_chars(req.method) <<
+                    "\t" << resp.code <<
+                    "\t" << strip_terminal_chars(req.document_raw) <<
+                    "\t" << strip_terminal_chars(req.user_agent) <<
+                    "\n";
+                print_lock.unlock();
+            } else if (this->config.verbosity > 1) {
+                print_lock.lock();
+                    for (auto& header : req.headers) {
+                        std::cout << header << std::endl;
+                    }
+                    std::cout << std::endl;
+                    std::cout << req.body << std::endl;
+                print_lock.unlock();
+            }
+        }
 
     private:
 
@@ -48,9 +93,9 @@ namespace hussar {
             memset(svc, 0, NI_MAXSERV);
         
             // allocate a buffer for recieved data
-            char buf[4096];
+            char buf[this->config.max_stdbuf];
 
-            if (this->config.verbose) {
+            if (this->config.verbosity) {
                 print_lock.lock();
                     std::cout << host <<" connected" << std::endl;
                 print_lock.unlock();
@@ -59,19 +104,14 @@ namespace hussar {
             // read and handle bytes until the connection ends
             while (true) {
                 // set the recv buffer to null chars
-                memset(buf, 0, 4096);
+                memset(buf, 0, this->config.max_stdbuf);
         
                 // read data incoming from the client into the recv buffer
-                int status;
-                if (ssl) {
-                    status = SSL_read(ssl, buf, 4096);
-                } else {
-                    status = recv(client, buf, 4094, 0);
-                }
+                int status = this->readsock(client, ssl, buf, this->config.max_stdbuf);
         
                 switch (status) {
                     case -1: // connection error
-                        if (this->config.verbose) {
+                        if (this->config.verbosity) {
                             print_lock.lock();
                                std::cerr << "There was a connection issue with " << host << std::endl;
                             print_lock.unlock();
@@ -82,40 +122,25 @@ namespace hussar {
                         goto srv_disconnect; // disconnect
                         break;
                     default:
-                        std::string bufStr{buf};
-                        Request req{bufStr, host};
+                        std::string buf_str{buf};
+                        Request req{buf_str, host};
                         Response resp{req};
  
                         this->route(req, resp);
 
-                        // we do a little logging
-                        if (this->config.verbose) {
-                            print_lock.lock();
-                            std::cout << req.remote_host <<
-                                "\t" << resp.headers["Date"] <<
-                                "\t" << strip_terminal_chars(req.method) <<
-                                "\t" << resp.code <<
-                                "\t" << strip_terminal_chars(req.document_raw) <<
-                                "\t" << strip_terminal_chars(req.user_agent) <<
-                                "\n";
-                            print_lock.unlock();
-                        }
+                        this->log(buf_str, req, resp);
 
                         std::string response = resp.serialize();
-                        if (ssl) {
-                            SSL_write(ssl, response.c_str(), response.size());
-                        } else {
-                            send(client, response.c_str(), response.size(), 0);
-                        }
+                        this->writesock(client, ssl, response.c_str(), response.size());
 
-                        if (req.content_type != "") {
-                            print_lock.lock();
-                            auto parts = split_string<std::string_view>(req.content_type, ';');
-                            for (auto& s : parts) {
-                                std::cout << s << std::endl;
-                            }
-                            print_lock.unlock();
-                        }
+                        //if (req.content_type != "") {
+                        //    print_lock.lock();
+                        //    auto parts = split_string<std::string_view>(req.content_type, ';');
+                        //    for (auto& s : parts) {
+                        //        std::cout << s << std::endl;
+                        //    }
+                        //    print_lock.unlock();
+                        //}
 
                         // if keep alive
                         if (req.keep_alive) {
@@ -128,7 +153,7 @@ namespace hussar {
             }
 
         srv_disconnect:
-            if (this->config.verbose) {
+            if (this->config.verbosity) {
                 print_lock.lock();
                     std::cout << host << " disconnected" << std::endl;
                 print_lock.unlock();
@@ -144,7 +169,7 @@ namespace hussar {
 
         void init_socket()
         {
-            if (this->config.verbose) {
+            if (this->config.verbosity) {
                 std::cout << "Binding socket " << this->config.host << ":" << this->config.port << std::endl;
             }
 
@@ -203,7 +228,7 @@ namespace hussar {
 
             // if ssl
             if (this->config.certificate != "" && this->config.private_key != "") {
-                if (this->config.verbose) {
+                if (this->config.verbosity) {
                     print_lock.lock();
                         std::cout << "SSL ENABLED" << std::endl;
                     print_lock.unlock();
@@ -260,7 +285,7 @@ namespace hussar {
                 inet_ntop(AF_INET, &this->client_address.sin_addr, host, NI_MAXHOST);
 
                 if (client_socket < 0) {
-                    if (this->config.verbose) {
+                    if (this->config.verbosity) {
                         print_lock.lock();
                             std::cerr << "ERROR problem with client connection" << std::endl;
                         print_lock.unlock();

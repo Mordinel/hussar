@@ -23,8 +23,10 @@ namespace hussar {
         std::string private_key;
         std::string certificate;
         uint16_t port;
+        uint16_t verbosity;
         uint32_t thread_count;
-        bool verbose;
+        uint64_t max_upload = 32'000'000;
+        uint64_t max_stdbuf = 4096;
 
         Config()
         {
@@ -33,7 +35,7 @@ namespace hussar {
             this->certificate = "";
             this->port = 8080;
             this->thread_count = 0;
-            this->verbose = false;
+            this->verbosity = false;
         }
 
         Config(Config&& config)
@@ -43,7 +45,7 @@ namespace hussar {
             this->certificate = config.certificate;
             this->port = config.port;
             this->thread_count = config.thread_count;
-            this->verbose = config.verbose;
+            this->verbosity = config.verbosity;
 
         }
 
@@ -54,7 +56,7 @@ namespace hussar {
             this->certificate = config.certificate;
             this->port = config.port;
             this->thread_count = config.thread_count;
-            this->verbose = config.verbose;
+            this->verbosity = config.verbosity;
             return *this;
         }
     };

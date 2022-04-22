@@ -34,7 +34,7 @@ namespace hussar {
         std::string get_query_raw;
         std::string post_query_raw;
         std::string version;
-        std::vector<std::string> headers_raw;
+        std::vector<std::string_view> headers;
         std::string user_agent;
         std::string connection;
         std::string content_type;
