@@ -24,7 +24,7 @@
 std::string DOCROOT = "";
 bool VERBOSE = false;
 
-void printHelp(char* arg0)
+void print_help(char* arg0)
 {
     std::cout << "Usage: " << arg0 << " [-hv -i <ipv4> -p <port> -t <thread count> -d <document root> -k <ssl private key> -c <ssl certificate>]\n";
     std::cout << "\t-h\t\tDisplay this help\n";
@@ -129,6 +129,8 @@ int main(int argc, char* argv[])
     config.certificate  = "";
     config.verbose      = false;
 
+    bool config_changed = false;
+
     std::stringstream ss;
 
     int c;
@@ -136,19 +138,22 @@ int main(int argc, char* argv[])
         switch (c) {
 
             case 'h':
-                printHelp(argv[0]);
+                print_help(argv[0]);
                 return 1;
 
             case 'v':
+                config_changed = true;
                 VERBOSE = true;
                 config.verbose = true;
                 break;
 
             case 'i':
+                config_changed = true;
                 config.host = optarg;
                 break;
 
             case 'p':
+                config_changed = true;
                 ss.clear();
                 ss << optarg;
                 ss >> config.port;
@@ -159,6 +164,7 @@ int main(int argc, char* argv[])
                 break;
 
             case 't':
+                config_changed = true;
                 ss.clear();
                 ss << optarg;
                 ss >> config.thread_count;
@@ -169,17 +175,25 @@ int main(int argc, char* argv[])
                 break;
  
             case 'k':
+                config_changed = true;
                 config.private_key = optarg;
                 break;
 
             case 'c':
+                config_changed = true;
                 config.certificate = optarg;
                 break;
 
             case 'd':
+                config_changed = true;
                 DOCROOT = optarg;
                 break;
        }
+    }
+
+    if (not config_changed) {
+        print_help(argv[0]);
+        return 1;
     }
 
     // if the paths are empty or one of the files don't exist or one of the files is not a regular file,
@@ -194,7 +208,7 @@ int main(int argc, char* argv[])
     }
 
     hus::Hussar server(config);
-    server.router.fallback(&web_server);
+    server.fallback(&web_server);
     server.serve();
 
     return 0;

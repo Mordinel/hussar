@@ -24,7 +24,7 @@
 #include "config.h"
 
 namespace hussar {
-    class Hussar {
+    class Hussar : public Router {
     private:
         int sockfd;                     // Server socket
         sockaddr_in client_address;      // client addr struct
@@ -35,7 +35,7 @@ namespace hussar {
         SSL_CTX* ssl_ctx;
 
     public:
-        hussar::Router router;
+        //hussar::Router router;
 
     private:
 
@@ -86,7 +86,7 @@ namespace hussar {
                         Request req{bufStr, host};
                         Response resp{req};
  
-                        this->router.route(req, resp);
+                        this->route(req, resp);
 
                         // we do a little logging
                         if (this->config.verbose) {

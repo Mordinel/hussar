@@ -67,7 +67,7 @@ namespace hussar {
         }
 
         // register get route
-        void get(const std::string& route, void (*func)(Request& req, Response& resp))
+        void get(const std::string& route, handler func)
         {
             this->GET[route] = func;
         }
@@ -85,7 +85,7 @@ namespace hussar {
         }
 
         // register head route
-        void head(const std::string& route, void (*func)(Request& req, Response& resp))
+        void head(const std::string& route, handler func)
         {
             this->HEAD[route] = func;
         }

@@ -66,7 +66,6 @@ void login(hus::Request& req, hus::Response& resp) {
 
     // TODO get creds from a db query and do a hash of some kind
     if (req.post["password"] != "lemon42") goto login_redirect; // TODO compute hash from given password and compare with hash from db
-
     if (hus::write_session(req.session_id, "username", req.post["username"])) {
         redirect_home(req, resp);
     } else {
@@ -145,13 +144,13 @@ int main() {
     hus::Hussar s(config);
 
     // register routes
-    s.router.fallback(&redirect_home);       // fallback route is everything other than registered routes
-    s.router.get("/", &home);
-    s.router.get("/login", &login_page);
-    s.router.post("/login", &login);
-    s.router.get("/logout", &logout);
-    s.router.get("/upload", &upload_page);
-    s.router.alt("PUT", "/upload", &upload);
+    s.fallback(&redirect_home);       // fallback route is everything other than registered routes
+    s.get("/", &home);
+    s.get("/login", &login_page);
+    s.post("/login", &login);
+    s.get("/logout", &logout);
+    s.get("/upload", &upload_page);
+    s.alt("PUT", "/upload", &upload);
 
     // BLOCKING listen for the server
     // perhaps put in a thread for non-blocking style behaviour so
