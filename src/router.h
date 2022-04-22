@@ -34,6 +34,7 @@ namespace hussar {
         std::unordered_map<std::string, handler> GET;
         std::unordered_map<std::string, handler> HEAD;
         std::unordered_map<std::string, handler> POST;
+        std::unordered_map<std::string, std::unordered_map<std::string, handler>> ALT;
 
     public:
         Router()
@@ -46,7 +47,7 @@ namespace hussar {
         Router& operator=(Router& r) = delete;
         Router& operator=(const Router& r) = delete;
 
-        void route(Request& req, Response& resp) const
+        void route(Request& req, Response& resp)
         {
             if (req.is_good) {
                 if (req.method == "GET") {
@@ -56,7 +57,7 @@ namespace hussar {
                 } else if (req.method == "POST") {
                     this->post(req, resp);
                 } else {
-                    this->fallback(req, resp);
+                    this->alt(req.method, req, resp);
                 }
             } else {
                 resp.headers["Content-Type"] = "text/html";
@@ -72,10 +73,10 @@ namespace hussar {
         }
 
         // call get route
-        void get(Request& req, Response& resp) const
+        void get(Request& req, Response& resp)
         {
             if (this->GET.find(req.document) != this->GET.end()) {
-                this->GET.at(req.document)(req, resp);
+                this->GET[req.document](req, resp);
             } else if (this->FALLBACK) {
                 this->FALLBACK(req, resp);
             } else {
@@ -90,10 +91,10 @@ namespace hussar {
         }
 
         // call head route
-        void head(Request& req, Response& resp) const
+        void head(Request& req, Response& resp)
         {
             if (this->HEAD.contains(req.document)) {
-                this->HEAD.at(req.document)(req, resp);
+                this->HEAD[req.document](req, resp);
             } else if (this->FALLBACK) {
                 this->FALLBACK(req, resp);
             } else {
@@ -108,10 +109,28 @@ namespace hussar {
         }
 
         // call post route
-        void post(Request& req, Response& resp) const
+        void post(Request& req, Response& resp)
         {
             if (this->POST.contains(req.document)) {
-                this->POST.at(req.document)(req, resp);
+                this->POST[req.document](req, resp);
+            } else if (this->FALLBACK) {
+                this->FALLBACK(req, resp);
+            } else {
+                not_implemented(req, resp);
+            }
+        }
+
+        // register alternate method route
+        void alt(const std::string& method, const std::string& route, handler func)
+        {
+            this->ALT[method][route] = func;
+        }
+
+        // call alternate method route
+        void alt(const std::string& method, Request& req, Response& resp)
+        {
+            if (this->ALT.contains(method) && this->ALT[method].contains(req.document)) {
+                this->ALT[method][req.document](req, resp);
             } else if (this->FALLBACK) {
                 this->FALLBACK(req, resp);
             } else {
@@ -126,7 +145,7 @@ namespace hussar {
         }
 
         // call fallback route
-        void fallback(Request& req, Response& resp) const
+        void fallback(Request& req, Response& resp)
         {
             if (this->FALLBACK) {
                 this->FALLBACK(req, resp);

@@ -26,7 +26,9 @@ void home(hus::Request& req, hus::Response& resp) {
     if (hus::read_session(req.session_id, "username") != "") {
         resp.body = "<h1>Welcome to the website, <b>" + hus::html_escape(hus::read_session(req.session_id, "username")) + "</b>!</h1><br><p>Click <a href=\"/logout\">HERE</a> to log out.</p>";
     } else {
-        resp.body = "<h1>Welcome to the website!</h1><br><p>Click <a href=\"/login\">HERE</a> to go to the login page</p>";
+        resp.body = "<h1>Welcome to the website!</h1><br>"
+                    "<p>Click <a href=\"/login\">HERE</a> to go to the login page</p>"
+                    "<p>Click <a href=\"/upload\">HERE</a> to go to the upload page</p>";
     }
 }
 
@@ -89,6 +91,47 @@ void logout(hus::Request& req, hus::Response& resp) {
     }
 }
 
+void upload_page(hus::Request& req, hus::Response& resp) {
+    if (hus::read_session(req.session_id, "username") != "") {
+        redirect_home(req, resp);
+        return;
+    }
+
+    // multiline string
+    resp.body = R"(
+<script>
+function upload() {
+    let files = document.getElementById("file").files;
+    if (files.length === 0) {
+        return;
+    }
+    let ajax = new XMLHttpRequest;
+
+    let formData = new FormData;
+    formData.append('file', files[0]);
+
+    ajax.open("PUT", "/upload", true);
+    ajax.send(formData);
+}
+</script>
+<form action="/upload" method="POST">
+<label for="file">File: </label>
+<input type="file" id="file" name="file" required><br>
+<input type="button" value="Submit" onclick=upload()>
+</form>
+    )";
+
+    // checking if parameter exists
+    if (req.get.find("message") != req.get.end()) {
+        resp.body += "<br><p>" + hus::html_escape(req.get["message"]) + "</p>";
+    }
+}
+
+void upload(hus::Request& req, hus::Response& resp) {
+    resp.body = "<h2>HELLO WORLD</h2>";
+    return;
+}
+
 int main() {
     hus::Config config;
     config.host         = "127.0.0.1"; // Socket Host
@@ -107,6 +150,8 @@ int main() {
     s.router.get("/login", &login_page);
     s.router.post("/login", &login);
     s.router.get("/logout", &logout);
+    s.router.get("/upload", &upload_page);
+    s.router.alt("PUT", "/upload", &upload);
 
     // BLOCKING listen for the server
     // perhaps put in a thread for non-blocking style behaviour so
