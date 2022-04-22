@@ -22,13 +22,13 @@
 #include "hussar.h"
 
 std::string DOCROOT = "";
-bool VERBOSE = false;
 
 void print_help(char* arg0)
 {
     std::cout << "Usage: " << arg0 << " [-hv -i <ipv4> -p <port> -t <thread count> -d <document root> -k <ssl private key> -c <ssl certificate>]\n";
     std::cout << "\t-h\t\tDisplay this help\n";
     std::cout << "\t-v\t\tVerbose console output\n";
+    std::cout << "\t-vv\t\tForensic console output\n";
     std::cout << "\t-i <IPV4>\tIpv4 to bind to\n";
     std::cout << "\t-p <PORT>\tPort to listen on\n";
     std::cout << "\t-t <THREAD>\tThreads to use\n";
@@ -105,18 +105,6 @@ void web_server(hus::Request& req, hus::Response& resp)
         resp.code= "400";
         resp.body = "<h1>400: Bad Request!</h1>";
     }
-
-    // prints the GET and POST request parameters in verbose mode
-    if (VERBOSE) {
-        hus::print_lock.lock();
-        for (auto& [key, value] : req.get) {
-            std::cout << "GET[" << hus::strip_terminal_chars(key) << "] = " << hus::strip_terminal_chars(value) << "\n";
-        }
-        for (auto& [key, value] : req.post) {
-            std::cout << "POST[" << hus::strip_terminal_chars(key) << "] = " << hus::strip_terminal_chars(value) << "\n";
-        }
-        hus::print_lock.unlock();
-    }
 }
 
 int main(int argc, char* argv[])
@@ -127,7 +115,7 @@ int main(int argc, char* argv[])
     config.thread_count = 0; // 0 defaults to max hardware threads
     config.private_key  = "";
     config.certificate  = "";
-    config.verbose      = false;
+    config.verbosity    = 0;
 
     bool config_changed = false;
 
@@ -143,8 +131,7 @@ int main(int argc, char* argv[])
 
             case 'v':
                 config_changed = true;
-                VERBOSE = true;
-                config.verbose = true;
+                config.verbosity++;
                 break;
 
             case 'i':

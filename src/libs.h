@@ -20,7 +20,7 @@
 // c includes
 #include <cstdlib>          // exit
 #include <netdb.h>          // getnameinfo
-#include <unistd.h>         // close
+#include <unistd.h>         // close, getopt
 #include <string.h>         // memset
 #include <signal.h>         // sigs
 #include <arpa/inet.h>      // htons

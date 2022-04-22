@@ -17,6 +17,17 @@
 
 #include "hussar.h"
 
+void print_help(const char* arg0) {
+    std::cout << "Usage: " << arg0 << " [-hv]\n";
+    std::cout << "\t-h\t\tDisplay this help\n";
+    std::cout << "\t-v\t\tVerbose console output\n";
+    std::cout << "\t-vv\t\tForensic console output\n";
+}
+
+void four_oh_four(hus::Request& req, hus::Response& resp) {
+    resp.code = "404";
+}
+
 void redirect_home(hus::Request& req, hus::Response& resp) {
     resp.code = "302";
     resp.headers["Location"] = "/";
@@ -131,20 +142,32 @@ void upload(hus::Request& req, hus::Response& resp) {
     return;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     hus::Config config;
     config.host         = "127.0.0.1"; // Socket Host
     config.port         = 8443;        // Socket Port
     config.thread_count = 0;           // Thread count
     config.private_key  = "key.pem";   // SSL Private key
     config.certificate  = "cert.pem";  // SSL Public key
-    config.verbosity    = 1;           // Verbosity enabled
+    config.verbosity    = 0;           // Verbosity enabled
 
     // set config.private_key and config.certificate to "" for no ssl
     hus::Hussar s(config);
 
+    int c;
+    while ((c = getopt(argc, argv, "hv")) != -1) {
+        switch (c) {
+            case 'h':
+                print_help(argv[0]);
+                return 1;
+            case 'v':
+                config.verbosity++;
+                break;
+        }
+    }
+
     // register routes
-    s.fallback(&redirect_home);       // fallback route is everything other than registered routes
+    s.fallback(&four_oh_four);       // fallback route is everything other than registered routes
     s.get("/", &home);
     s.get("/login", &login_page);
     s.post("/login", &login);
