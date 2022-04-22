@@ -50,13 +50,13 @@ namespace hussar {
         {
             if (req.is_good) {
                 if (req.method == "GET") {
-                    get(req, resp);
+                    this->get(req, resp);
                 } else if (req.method == "HEAD") {
-                    head(req, resp);
+                    this->head(req, resp);
                 } else if (req.method == "POST") {
-                    post(req, resp);
+                    this->post(req, resp);
                 } else {
-                    fallback(req, resp);
+                    this->fallback(req, resp);
                 }
             } else {
                 resp.headers["Content-Type"] = "text/html";
@@ -68,16 +68,16 @@ namespace hussar {
         // register get route
         void get(const std::string& route, void (*func)(Request& req, Response& resp))
         {
-            GET[route] = func;
+            this->GET[route] = func;
         }
 
         // call get route
         void get(Request& req, Response& resp) const
         {
-            if (GET.find(req.document) != GET.end()) {
-                GET.at(req.document)(req, resp);
-            } else if (FALLBACK) {
-                FALLBACK(req, resp);
+            if (this->GET.find(req.document) != this->GET.end()) {
+                this->GET.at(req.document)(req, resp);
+            } else if (this->FALLBACK) {
+                this->FALLBACK(req, resp);
             } else {
                 not_implemented(req, resp);
             }
@@ -86,16 +86,16 @@ namespace hussar {
         // register head route
         void head(const std::string& route, void (*func)(Request& req, Response& resp))
         {
-            HEAD[route] = func;
+            this->HEAD[route] = func;
         }
 
         // call head route
         void head(Request& req, Response& resp) const
         {
-            if (HEAD.contains(req.document)) {
-                HEAD.at(req.document)(req, resp);
-            } else if (FALLBACK) {
-                FALLBACK(req, resp);
+            if (this->HEAD.contains(req.document)) {
+                this->HEAD.at(req.document)(req, resp);
+            } else if (this->FALLBACK) {
+                this->FALLBACK(req, resp);
             } else {
                 not_implemented(req, resp);
             }
@@ -104,16 +104,16 @@ namespace hussar {
         // register post route
         void post(const std::string& route, handler func)
         {
-            POST[route] = func;
+            this->POST[route] = func;
         }
 
         // call post route
         void post(Request& req, Response& resp) const
         {
-            if (POST.contains(req.document)) {
-                POST.at(req.document)(req, resp);
-            } else if (FALLBACK) {
-                FALLBACK(req, resp);
+            if (this->POST.contains(req.document)) {
+                this->POST.at(req.document)(req, resp);
+            } else if (this->FALLBACK) {
+                this->FALLBACK(req, resp);
             } else {
                 not_implemented(req, resp);
             }
@@ -122,14 +122,14 @@ namespace hussar {
         // register fallback route
         void fallback(handler func)
         {
-            FALLBACK = func;
+            this->FALLBACK = func;
         }
 
         // call fallback route
         void fallback(Request& req, Response& resp) const
         {
-            if (FALLBACK) {
-                FALLBACK(req, resp);
+            if (this->FALLBACK) {
+                this->FALLBACK(req, resp);
             }
         }
     };
