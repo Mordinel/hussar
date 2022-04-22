@@ -109,10 +109,12 @@ namespace hussar {
                         }
 
                         if (req.content_type != "") {
-                            std::vector<std::string> parts = split_string(req.content_type, ';');
+                            print_lock.lock();
+                            auto parts = split_string<std::string_view>(req.content_type, ';');
                             for (auto& s : parts) {
                                 std::cout << s << std::endl;
                             }
+                            print_lock.unlock();
                         }
 
                         // if keep alive

@@ -50,12 +50,12 @@ namespace hussar {
         /**
          * extract the string after the host header name
          */
-        std::string extract_header_content(std::string& str)
+        std::string extract_header_content(std::string_view str)
         {
             size_t n;
             std::ostringstream oss;
 
-            std::vector<std::string> split_line = split_string(str, ' ');
+            auto split_line = split_string<std::string_view>(str, ' ');
             oss << split_line[1];
             for (n = 2; n < split_line.size(); ++n) {
                 oss << " " << split_line[n];
@@ -78,7 +78,7 @@ namespace hussar {
         /**
          * extract the string after the first '?' in the document line
          */
-        std::string extract_get(std::string& str) {
+        std::string extract_get(const std::string& str) {
             std::ostringstream oss;
             const char* s = str.c_str();
         
@@ -163,67 +163,45 @@ namespace hussar {
          * collects header parameters
          * returns the line that the body should be on.
          */
-        size_t collect_headers(std::vector<std::string>& reqVec)
+        template <typename T>
+        void collect_headers(std::vector<T>& headers)
         {
-            // parse the request headers and extract the request body
-            size_t lineIdx;
-            for (lineIdx = 1; lineIdx < reqVec.size(); ++lineIdx) {
-                std::string& line = reqVec[lineIdx];
-        
-                if (line == "") {
-                    lineIdx++;
-                    break;
-                }
-        
-                if (line.rfind("User-Agent: ", 0) != std::string::npos) {
+            for (auto& line : headers) {
+                if (line.find("User-Agent: ", 0) != std::string::npos) {
                     this->user_agent = this->extract_header_content(line);
-                } else if (line.rfind("Host: ", 0) != std::string::npos) {
+                } else if (line.find("Host: ", 0) != std::string::npos) {
                     this->virtual_host = this->extract_header_content(line);
-                } else if (line.rfind("Connection: ", 0) != std::string::npos) {
+                } else if (line.find("Connection: ", 0) != std::string::npos) {
                     this->connection = this->extract_header_content(line);
-                } else if (line.rfind("Content-Type: ", 0) != std::string::npos) {
+                } else if (line.find("Content-Type: ", 0) != std::string::npos) {
                     this->content_type = this->extract_header_content(line);
-                } else if (line.rfind("Cookie: ", 0) != std::string::npos) {
+                } else if (line.find("Cookie: ", 0) != std::string::npos) {
                     this->cookies_raw = this->extract_header_content(line);
                 }
             }
-
-            return lineIdx-1;
         }
 
-        /**
-         * extracts the body of the document, assuming lineIdx is the line in reqVec that the body starts on
-         */
-        std::string extract_body(std::vector<std::string>& reqVec, size_t index)
-        {
-            size_t lineIdx = index;
-            std::ostringstream oss;
-            for (; lineIdx < reqVec.size(); ++lineIdx) {
-                oss << reqVec[lineIdx];
-            }
-            return oss.str();
-        }
-    
         /**
          * validates the request line, returns true if it's valid, false if it's not.
          */
-        bool validate_resource_line(std::vector<std::string>& request_line)
+        template <typename T>
+        bool validate_resource_line(std::vector<T>& request_line)
         {
-            std::string& http_version = request_line[2];
+            T http_version = request_line[2];
         
-            std::vector<std::string> http_version_split = split_string(http_version, '/');
+            auto http_version_split = split_string<T>(http_version, '/');
             if (http_version_split.size() != 2) {
                 return false;
             }
         
-            std::string& protocol = http_version_split[0];
+            std::string_view protocol = http_version_split[0];
             if (protocol != "HTTP") {
                 return false;
             }
         
-            std::string http_version_trunc = http_version_split[1].substr(0,3);
+            std::string_view http_version_trunc = http_version_split[1].substr(0,3);
             float version;
-            std::istringstream iss(http_version_trunc);
+            std::istringstream iss{std::string{http_version_trunc}};
             iss >> version;
             if (iss.fail()) {
                 return false;
@@ -259,16 +237,40 @@ namespace hussar {
         Request(const std::string& request, std::string host)
             : is_good(true), keep_alive(false), remote_host(host)
         {
-            // split into lines
-            std::vector<std::string> request_lines = split_string(request, '\n');
-        
-            if (request_lines.size() < 1) {
-                this->is_good = false;
-                return;
+            std::vector<std::string_view> headers;
+            std::vector<std::string_view> resource_line_split;
+
+            {   // scope to destroy invalid memory
+                auto head_body_split = split_string<std::string_view>(request, "\r\n\r\n");
+                if (head_body_split.size() < 1) {
+                    this->is_good = false;
+                    return;
+                }
+
+                headers = split_string<std::string_view>(head_body_split[0], "\r\n");
+                if (headers.size() < 1) {
+                    this->is_good = false;
+                    return;
+                }
+
+                std::string_view resource_line = headers[0];
+                headers.erase(headers.begin());
+
+                std::vector<std::string_view> body_parts;
+                // set the body value
+                if (head_body_split.size() > 2) {
+                    for (size_t n = 1; n < head_body_split.size(); ++n) {
+                        body_parts.push_back(head_body_split[n]);
+                    }
+                    this->body = join_string(body_parts, "\r\n");
+                } else if (head_body_split.size() == 2) {
+                    this->body = head_body_split[1];
+                }
+
+                // get the first line as a vector
+                resource_line_split = split_string<std::string_view>(resource_line, ' ');
             }
-        
-            // get the first line as a vector
-            std::vector<std::string> resource_line_split = split_string(request_lines[0], ' ');
+
 
             // invalid request line
             if (resource_line_split.size() != 3) {
@@ -282,7 +284,7 @@ namespace hussar {
             this->version = resource_line_split[2];
             this->document = this->extract_document(this->document_raw);
             this->document = url_decode(this->document);
-            this->get_query_raw = this->extract_get(resource_line_split[1]);
+            this->get_query_raw = this->extract_get(std::string{resource_line_split[1]});
         
             // validate request line
             if (not this->validate_resource_line(resource_line_split)){
@@ -291,7 +293,7 @@ namespace hussar {
             }
         
             // parse the request headers
-            size_t line_index = this->collect_headers(request_lines);
+            this->collect_headers(headers);
 
             // parse cookie values
             this->cookies = this->get_cookies(this->cookies_raw);
@@ -299,15 +301,12 @@ namespace hussar {
             // set connection to keepalive
             this->keep_alive = this->connection == "keep-alive";
 
-            // extract the request body
-            this->body = this->extract_body(request_lines, line_index);
-
             // parse GET params
             this->parse_params(this->get, this->get_query_raw);
 
             // parse POST params if method is POST
-            if (this->method == "POST" && line_index < request_lines.size()) {
-                this->post_query_raw = request_lines[line_index];
+            if (this->content_type == "application/x-www-form-urlencoded") {
+                this->post_query_raw = this->body;
                 this->parse_params(this->post, this->post_query_raw);
             }
         }

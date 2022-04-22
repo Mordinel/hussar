@@ -189,18 +189,19 @@ namespace hussar {
     /**
      * splits the str into dest delimited by char c
      */
-    std::vector<std::string> split_string(const std::string& str, char c)
+    template <typename T>
+    std::vector<T> split_string(std::string_view str, const char c)
     {
         std::string::size_type i = 0;
         std::string::size_type j = str.find(c);
-        std::vector<std::string> dest;
+        std::vector<T> dest;
     
         while (j != std::string::npos) {
-            dest.push_back(str.substr(i, j - i));
+            dest.emplace_back(str.substr(i, j - i));
             i = ++j;
             j = str.find(c, j);
             if (j == std::string::npos) {
-                dest.push_back(str.substr(i, str.length()));
+                dest.emplace_back(str.substr(i, str.length()));
             }
         }
 
@@ -210,22 +211,57 @@ namespace hussar {
     /**
      * splits the str into dest delimited by char c
      */
-    std::vector<std::string> split_string(const std::string& str, const std::string& delim)
+    template <typename T>
+    std::vector<T> split_string(std::string_view str, const std::string& delim)
     {
         std::string::size_type i = 0;
         std::string::size_type j = str.find(delim);
-        std::vector<std::string> dest;
+        std::vector<T> dest;
     
         while (j != std::string::npos) {
-            dest.push_back(str.substr(i, j - i));
+            dest.emplace_back(str.substr(i, j - i));
             i = ++j;
             j = str.find(delim, j);
             if (j == std::string::npos) {
-                dest.push_back(str.substr(i, str.length()));
+                dest.emplace_back(str.substr(i, str.length()));
             }
         }
 
         return dest;
+    }
+
+    /**
+     * joins the strings into one string delimited by char c
+     */
+    template <typename T>
+    std::string join_string(std::vector<T>& strings, const char c)
+    {
+        if (strings.size() == 0) return "";
+        if (strings.size() == 1) return std::string{strings[0]};
+
+        std::ostringstream oss{std::string{strings[0]}};
+        for (size_t n = 1; n < strings.size(); ++n) {
+            oss << c << strings[n];
+        }
+
+        return oss.str();
+    }
+
+    /**
+     * joins the strings into one string delimited by string delim
+     */
+    template <typename T>
+    std::string join_string(std::vector<T>& strings, const std::string& delim)
+    {
+        if (strings.size() == 0) return "";
+        if (strings.size() == 1) return std::string{strings[0]};
+
+        std::ostringstream oss{std::string{strings[0]}};
+        for (size_t n = 1; n < strings.size(); ++n) {
+            oss << delim << strings[n];
+        }
+
+        return oss.str();
     }
 
     /**
