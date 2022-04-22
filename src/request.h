@@ -52,12 +52,10 @@ namespace hussar {
          */
         std::string extract_header_content(std::string& str)
         {
-            std::ostringstream oss;
-            std::vector<std::string> split_line;
             size_t n;
-        
-            split_string(str, ' ', split_line);
-        
+            std::ostringstream oss;
+
+            std::vector<std::string> split_line = split_string(str, ' ');
             oss << split_line[1];
             for (n = 2; n < split_line.size(); ++n) {
                 oss << " " << split_line[n];
@@ -169,9 +167,7 @@ namespace hussar {
         {
             // parse the request headers and extract the request body
             size_t lineIdx;
-            std::vector<std::string> split_line;
             for (lineIdx = 1; lineIdx < reqVec.size(); ++lineIdx) {
-                split_line.clear();
                 std::string& line = reqVec[lineIdx];
         
                 if (line == "") {
@@ -213,15 +209,9 @@ namespace hussar {
          */
         bool validate_resource_line(std::vector<std::string>& request_line)
         {
-            std::string& method = request_line[0];
             std::string& http_version = request_line[2];
         
-            if ((method != "GET") && (method != "POST") && (method != "HEAD")) {
-                return false;
-            }
-        
-            std::vector<std::string> http_version_split;
-            split_string(http_version, '/', http_version_split);
+            std::vector<std::string> http_version_split = split_string(http_version, '/');
             if (http_version_split.size() != 2) {
                 return false;
             }
@@ -270,8 +260,7 @@ namespace hussar {
             : is_good(true), keep_alive(false), remote_host(host)
         {
             // split into lines
-            std::vector<std::string> request_lines;
-            split_string(request, '\n', request_lines);
+            std::vector<std::string> request_lines = split_string(request, '\n');
         
             if (request_lines.size() < 1) {
                 this->is_good = false;
@@ -279,9 +268,8 @@ namespace hussar {
             }
         
             // get the first line as a vector
-            std::vector<std::string> resource_line_split;
-            split_string(request_lines[0], ' ', resource_line_split);
-                
+            std::vector<std::string> resource_line_split = split_string(request_lines[0], ' ');
+
             // invalid request line
             if (resource_line_split.size() != 3) {
                 this->is_good = false;

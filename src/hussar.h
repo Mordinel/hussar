@@ -108,6 +108,13 @@ namespace hussar {
                             send(client, response.c_str(), response.size(), 0);
                         }
 
+                        if (req.content_type != "") {
+                            std::vector<std::string> parts = split_string(req.content_type, ';');
+                            for (auto& s : parts) {
+                                std::cout << s << std::endl;
+                            }
+                        }
+
                         // if keep alive
                         if (req.keep_alive) {
                             continue;

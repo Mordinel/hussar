@@ -18,6 +18,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <string_view>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -185,14 +186,14 @@ namespace hussar {
         return mimeIter->second;
     }
 
-    
     /**
-     * splits the string str into vector strVec, delimited by char c
+     * splits the str into dest delimited by char c
      */
-    void split_string(const std::string& str, char c, std::vector<std::string>& dest)
+    std::vector<std::string> split_string(const std::string& str, char c)
     {
         std::string::size_type i = 0;
         std::string::size_type j = str.find(c);
+        std::vector<std::string> dest;
     
         while (j != std::string::npos) {
             dest.push_back(str.substr(i, j - i));
@@ -202,6 +203,29 @@ namespace hussar {
                 dest.push_back(str.substr(i, str.length()));
             }
         }
+
+        return dest;
+    }
+
+    /**
+     * splits the str into dest delimited by char c
+     */
+    std::vector<std::string> split_string(const std::string& str, const std::string& delim)
+    {
+        std::string::size_type i = 0;
+        std::string::size_type j = str.find(delim);
+        std::vector<std::string> dest;
+    
+        while (j != std::string::npos) {
+            dest.push_back(str.substr(i, j - i));
+            i = ++j;
+            j = str.find(delim, j);
+            if (j == std::string::npos) {
+                dest.push_back(str.substr(i, str.length()));
+            }
+        }
+
+        return dest;
     }
 
     /**
