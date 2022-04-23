@@ -151,9 +151,6 @@ int main(int argc, char* argv[]) {
     config.certificate  = "cert.pem";  // SSL Public key
     config.verbosity    = 0;           // Verbosity enabled
 
-    // set config.private_key and config.certificate to "" for no ssl
-    hus::Hussar s(config);
-
     int c;
     while ((c = getopt(argc, argv, "hv")) != -1) {
         switch (c) {
@@ -165,6 +162,9 @@ int main(int argc, char* argv[]) {
                 break;
         }
     }
+
+    // set config.private_key and config.certificate to "" for no ssl
+    hus::Hussar s(config);
 
     // register routes
     s.fallback(&four_oh_four);       // fallback route is everything other than registered routes
