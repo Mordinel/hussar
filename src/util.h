@@ -220,7 +220,8 @@ namespace hussar {
     
         while (j != std::string::npos) {
             dest.emplace_back(str.substr(i, j - i));
-            i = ++j;
+            j += delim.size();
+            i = j;
             j = str.find(delim, j);
             if (j == std::string::npos) {
                 dest.emplace_back(str.substr(i, str.length()));
