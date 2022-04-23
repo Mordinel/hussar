@@ -239,7 +239,9 @@ namespace hussar {
         if (strings.size() == 0) return "";
         if (strings.size() == 1) return std::string{strings[0]};
 
-        std::ostringstream oss{std::string{strings[0]}};
+        std::ostringstream oss;
+        oss << strings[0];
+
         for (size_t n = 1; n < strings.size(); ++n) {
             oss << c << strings[n];
         }
@@ -256,7 +258,9 @@ namespace hussar {
         if (strings.size() == 0) return "";
         if (strings.size() == 1) return std::string{strings[0]};
 
-        std::ostringstream oss{std::string{strings[0]}};
+        std::ostringstream oss;
+        oss << strings[0];
+
         for (size_t n = 1; n < strings.size(); ++n) {
             oss << delim << strings[n];
         }

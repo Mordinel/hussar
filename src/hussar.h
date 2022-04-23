@@ -79,7 +79,11 @@ namespace hussar {
             }
         }
 
-    private:
+        void handle_transfer_headers(int client, SSL* ssl, Request& req, Response& resp)
+        {
+            std::osyncstream syncout{std::cout};
+            syncout << req.body << std::endl;
+        }
 
         /**
          * handles a single client connection
@@ -121,20 +125,14 @@ namespace hussar {
                         Request req{buf_str, host};
                         Response resp{req};
  
+                        this->handle_transfer_headers(client, ssl, req, resp);
+
                         this->route(req, resp);
 
                         this->log(buf_str, req, resp);
 
                         std::string response = resp.serialize();
                         this->writesock(client, ssl, response.c_str(), response.size());
-
-                        //if (req.content_type != "") {
-                        //    auto parts = split_string<std::string_view>(req.content_type, ';');
-                        //    std::osyncstream syncout;
-                        //    for (auto& s : parts) {
-                        //        syncout << s << std::endl;
-                        //    }
-                        //}
 
                         // if keep alive
                         if (req.keep_alive) {

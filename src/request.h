@@ -38,6 +38,7 @@ namespace hussar {
         std::string user_agent;
         std::string connection;
         std::string content_type;
+        std::string content_length;
         std::string virtual_host;
         std::string cookies_raw;
         std::string body;
@@ -175,6 +176,8 @@ namespace hussar {
                     this->connection = this->extract_header_content(line);
                 } else if (line.find("Content-Type: ", 0) != std::string::npos) {
                     this->content_type = this->extract_header_content(line);
+                } else if (line.find("Content-Length: ", 0) != std::string::npos) {
+                    this->content_length = this->extract_header_content(line);
                 } else if (line.find("Cookie: ", 0) != std::string::npos) {
                     this->cookies_raw = this->extract_header_content(line);
                 }
@@ -237,40 +240,33 @@ namespace hussar {
         Request(const std::string& request, std::string host)
             : is_good(true), keep_alive(false), remote_host(host)
         {
-            std::vector<std::string_view> headers;
-            std::vector<std::string_view> resource_line_split;
+            std::vector<std::string> headers;
+            std::vector<std::string> resource_line_split;
 
-            {   // scope to destroy invalid memory
-                auto head_body_split = split_string<std::string_view>(request, "\r\n\r\n");
+            {
+                // split headers and body content
+                auto head_body_split = split_string<std::string>(request, "\r\n\r\n");
                 if (head_body_split.size() < 1) {
                     this->is_good = false;
                     return;
                 }
 
-                headers = split_string<std::string_view>(head_body_split[0], "\r\n");
+                // split headers by line
+                headers = split_string<std::string>(head_body_split[0], "\r\n");
                 if (headers.size() < 1) {
                     this->is_good = false;
                     return;
                 }
+                // remove the headers from the original split
+                head_body_split.erase(head_body_split.begin());
 
-                std::string_view resource_line = headers[0];
+                // join the remaining parts back into the body
+                this->body = join_string(head_body_split, "\r\n\r\n");
+
+                // get the first line as a vector and remove it from the headers
+                resource_line_split = split_string<std::string>(headers[0], ' ');
                 headers.erase(headers.begin());
-
-                std::vector<std::string_view> body_parts;
-                // set the body value
-                if (head_body_split.size() > 2) {
-                    for (size_t n = 1; n < head_body_split.size(); ++n) {
-                        body_parts.push_back(head_body_split[n]);
-                    }
-                    this->body = join_string(body_parts, "\r\n");
-                } else if (head_body_split.size() == 2) {
-                    this->body = head_body_split[1];
-                }
-
-                // get the first line as a vector
-                resource_line_split = split_string<std::string_view>(resource_line, ' ');
             }
-
 
             // invalid request line
             if (resource_line_split.size() != 3) {
