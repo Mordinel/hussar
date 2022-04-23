@@ -19,6 +19,7 @@
 
 #include <unordered_map>
 #include <string_view>
+#include <syncstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -30,8 +31,6 @@
 #define hus hussar
 
 namespace hussar {
-    std::mutex print_mtx;
-    std::unique_lock<std::mutex> print_lock(print_mtx);
     std::unordered_map<std::string, std::string> mimes = {
         {"woff", "font/woff"},
         {"woff2", "font/woff2"},
@@ -270,9 +269,8 @@ namespace hussar {
      */
     void fatal_error(const std::string& message)
     {
-        print_lock.lock();
-            std::cerr << message << std::endl;
-        print_lock.unlock();
+        std::osyncstream syncerr{std::cerr};
+        syncerr << message << std::endl;
         std::exit(1);
     }
 
