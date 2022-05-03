@@ -84,8 +84,11 @@ namespace hussar {
 
         void handle_transfer_headers(int client, SSL* ssl, Request& req, Response& resp)
         {
-            std::osyncstream syncout{std::cout};
-            syncout << req.body << std::endl;
+            if (this->config.verbosity) {
+                print_lock.lock();
+                    std::cout << req.body << std::endl;
+                print_lock.unlock();
+            }
         }
 
         /**
