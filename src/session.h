@@ -39,12 +39,15 @@ namespace hussar {
                 int error = RAND_bytes(id_data, SESSION_ID_LEN);
             openssl_rand_lock.unlock();
 
-            std::osyncstream syncerr{std::cerr};
             if (error == -1) {
-                syncerr << "Not supported by the current RAND method.";
+                print_lock.lock();
+                std::cerr << "Not supported by the current RAND method.";
+                print_lock.unlock();
                 std::exit(1);
             } else if (error == 0) {
-                syncerr << "Other openssl error.";
+                print_lock.lock();
+                std::cerr << "Other openssl error.";
+                print_lock.unlock();
                 std::exit(1);
             }
 

@@ -61,21 +61,24 @@ namespace hussar {
          */
         void log(std::string& raw_req, Request& req, Response& resp)
         {
-            std::osyncstream syncout{std::cout};
             if (this->config.verbosity == 1) {
-                syncout << req.remote_host <<
+                print_lock.lock();
+                std::cout << req.remote_host <<
                     "\t" << resp.headers["Date"] <<
                     "\t" << strip_terminal_chars(req.method) <<
                     "\t" << resp.code <<
                     "\t" << strip_terminal_chars(req.document_raw) <<
                     "\t" << strip_terminal_chars(req.user_agent) <<
                     "\n";
+                print_lock.unlock();
             } else if (this->config.verbosity > 1) {
-                for (auto& header : req.headers) {
-                    syncout << header << std::endl;
-                }
-                syncout << std::endl;
-                syncout << req.body << std::endl;
+                print_lock.lock();
+                    for (auto& header : req.headers) {
+                        std::cout << header << std::endl;
+                    }
+                    std::cout << std::endl;
+                    std::cout << req.body << std::endl;
+                print_lock.unlock();
             }
         }
 
@@ -97,8 +100,9 @@ namespace hussar {
             char buf[this->config.max_stdbuf];
 
             if (this->config.verbosity) {
-                std::osyncstream syncout{std::cout};
-                syncout << host <<" connected" << std::endl;
+                print_lock.lock();
+                    std::cout << host <<" connected" << std::endl;
+                print_lock.unlock();
             }
 
             // read and handle bytes until the connection ends
@@ -112,8 +116,9 @@ namespace hussar {
                 switch (status) {
                     case -1: // connection error
                         if (this->config.verbosity) {
-                            std::osyncstream syncerr{std::cerr};
-                            syncerr << "There was a connection issue with " << host << std::endl;
+                            print_lock.lock();
+                               std::cerr << "There was a connection issue with " << host << std::endl;
+                            print_lock.unlock();
                         }
                         goto srv_disconnect; // disconnect
                         break;
@@ -134,6 +139,15 @@ namespace hussar {
                         std::string response = resp.serialize();
                         this->writesock(client, ssl, response.c_str(), response.size());
 
+                        //if (req.content_type != "") {
+                        //    print_lock.lock();
+                        //    auto parts = split_string<std::string_view>(req.content_type, ';');
+                        //    for (auto& s : parts) {
+                        //        std::cout << s << std::endl;
+                        //    }
+                        //    print_lock.unlock();
+                        //}
+
                         // if keep alive
                         if (req.keep_alive) {
                             continue;
@@ -146,8 +160,9 @@ namespace hussar {
 
         srv_disconnect:
             if (this->config.verbosity) {
-                std::osyncstream syncout{std::cout};
-                syncout << host << " disconnected" << std::endl;
+                print_lock.lock();
+                    std::cout << host << " disconnected" << std::endl;
+                print_lock.unlock();
             }
 
             if (ssl) {
@@ -212,28 +227,32 @@ namespace hussar {
         Hussar(Config& config)
             : config(std::move(config)), thread_pool(this->config.thread_count), ssl_ctx(nullptr)
         {
+            print_lock.unlock();
             openssl_rand_lock.unlock();
             sessions_lock.unlock();
             this->init_socket();
 
-            std::osyncstream syncout{std::cout};
             // if ssl
             if (this->config.certificate != "" && this->config.private_key != "") {
                 if (this->config.verbosity) {
-                    syncout << "SSL ENABLED" << std::endl;
+                    print_lock.lock();
+                        std::cout << "SSL ENABLED" << std::endl;
+                    print_lock.unlock();
                 }
 
                 this->init_ssl_context(this->config.certificate, this->config.private_key);
             }
 
             // print link
-            syncout << "Server at: ";
-            if (this->ssl_ctx) { // if ssl
-                syncout << "https://";
-            } else {
-                syncout << "http://";
-            }
-            syncout << this->config.host << ":" << this->config.port << "/\n";
+            print_lock.lock();
+                std::cout << "Server at: ";
+                if (this->ssl_ctx) { // if ssl
+                    std::cout << "https://";
+                } else {
+                    std::cout << "http://";
+                }
+                std::cout << this->config.host << ":" << this->config.port << "/\n";
+            print_lock.unlock();
         }
 
         // delete copy constructors
@@ -273,8 +292,9 @@ namespace hussar {
 
                 if (client_socket < 0) {
                     if (this->config.verbosity) {
-                        std::osyncstream syncerr{std::cerr};
-                        syncerr << "ERROR problem with client connection" << std::endl;
+                        print_lock.lock();
+                            std::cerr << "ERROR problem with client connection" << std::endl;
+                        print_lock.unlock();
                     }
                     std::free(host);
                 } else if (this->ssl_ctx) {
