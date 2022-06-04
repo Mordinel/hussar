@@ -51,7 +51,6 @@ void login_page(hus::Request& req, hus::Response& resp) {
         return;
     }
 
-    // multiline string
     resp.body = R"(
 <form action="/login" method="post">
 <label for="name">Username: </label>
@@ -110,7 +109,6 @@ void upload_page(hus::Request& req, hus::Response& resp) {
         return;
     }
 
-    // multiline string
     resp.body = R"(
 <script>
 function upload() {
@@ -128,7 +126,7 @@ function upload() {
             } else if (ajax.responseType === "document") {
                 elem.innerHTML = ajax.responseXML;
             } else {
-                elem.innterHTML = ajax.response;
+                elem.innerHTML = ajax.response;
             }
         }
     };
