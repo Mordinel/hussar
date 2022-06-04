@@ -138,6 +138,33 @@ namespace hussar {
     }
 
     /**
+     * filter bad chars from string for name
+     */
+    std::string filter_name(const std::string& str)
+    {
+        std::ostringstream oss;
+
+        // get content start and end
+        for (size_t n = 0; n < str.size(); ++n) {
+            char c = str[n];
+            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+                oss << c;
+            } else {
+                switch(c) {
+                    default:
+                        break;
+                    case '.':
+                    case '_':
+                        oss << c;
+                        break;
+                }
+            }
+        }
+
+        return oss.str();
+    }
+
+    /**
      * Trims whitespace from the start and end of a string
      */
     std::string trim(const std::string& str)
@@ -299,6 +326,23 @@ namespace hussar {
 
         }
         return true;
+    }
+
+    /**
+     * extract the string after the host header name
+     */
+    std::string extract_header_content(std::string_view str)
+    {
+        size_t n;
+        std::ostringstream oss;
+
+        auto split_line = split_string<std::string_view>(str, ' ');
+        oss << split_line[1];
+        for (n = 2; n < split_line.size(); ++n) {
+            oss << " " << split_line[n];
+        }
+    
+        return strip_terminal_chars(oss.str());
     }
 }
 

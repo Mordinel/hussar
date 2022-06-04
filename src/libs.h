@@ -18,6 +18,7 @@
 #pragma once
 
 // c includes
+#include <cstring>          // memset
 #include <cstdlib>          // exit
 #include <netdb.h>          // getnameinfo
 #include <unistd.h>         // close, getopt

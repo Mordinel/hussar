@@ -82,12 +82,51 @@ namespace hussar {
             }
         }
 
+        /**
+         * checks for transfer headers and adds relevant data to the request object
+         */
         void handle_transfer_headers(int client, SSL* ssl, Request& req, Response& resp)
         {
-            if (this->config.verbosity) {
-                print_lock.lock();
-                    std::cout << req.body << std::endl;
-                print_lock.unlock();
+            if (req.content_type.find("multipart/form-data") != std::string::npos) {
+                // get stard and end form boundary strings
+                std::vector<std::string> getting_boundary = split_string<std::string>(req.content_type, "boundary=");
+                std::string boundary = getting_boundary.back();
+                std::ostringstream oss("\r\n");
+                oss << boundary << "--\r\n";
+                std::string end_boundary = oss.str();
+
+                // if the body doesn't contain the end boundary, the socket needs to be read
+                if (req.body.size() == 0 && req.body.find(end_boundary) == std::string::npos) {
+                    oss.clear();
+                    oss.str("");
+                    char inbound[2048];
+                recv_more:
+                    std::memset(inbound, 0, 2048);
+                    int status = this->readsock(client, ssl, inbound, 2048);
+                    switch (status) {
+                        case -1:
+                            return;
+                        case 0:
+                            // exit case, no more data to read
+                            break;
+                        default:
+                            oss.write(inbound, status);
+                            // check the read data for an end boundary, if none, read socket again
+                            if (oss.view().find(end_boundary) == std::string_view::npos) {
+                                goto recv_more;
+                            }
+                    }
+                    req.body = oss.str();
+                }
+
+                // nothing to handle
+                if (req.body.size() == 0) return;
+                
+                // emplace an UploadedFile into the files vector in request object
+                UploadedFile u_f(boundary, req.body);
+                if (u_f.valid) {
+                    req.files.emplace(std::make_pair(u_f.id, std::move(u_f)));
+                }
             }
         }
 

@@ -117,6 +117,19 @@ function upload() {
     }
     let ajax = new XMLHttpRequest;
 
+    ajax.onreadystatechange = function() {
+        if (ajax.readyState == 4) {
+            let elem = document.getElementById("response");
+            if (!ajax.responseType || ajax.responseType === "text") {
+                elem.innerHTML = ajax.responseText;
+            } else if (ajax.responseType === "document") {
+                elem.innerHTML = ajax.responseXML;
+            } else {
+                elem.innterHTML = ajax.response;
+            }
+        }
+    };
+
     let formData = new FormData;
     formData.append('file', files[0]);
 
@@ -129,6 +142,7 @@ function upload() {
 <input type="file" id="file" name="file" required><br>
 <input type="button" value="Submit" onclick=upload()>
 </form>
+<div id="response"></div>
     )";
 
     // checking if parameter exists
@@ -138,7 +152,14 @@ function upload() {
 }
 
 void upload(hus::Request& req, hus::Response& resp) {
-    resp.body = "<h2>HELLO WORLD</h2>";
+    std::ostringstream oss;
+    oss << "<h1>Uploaded File Data:</h1><br>\n";
+    for (auto& [key, file] : req.files) {
+        oss << "<h2>" << hus::html_escape(file.id) << ": " << hus::html_escape(file.name) << "</h2><br>\n";
+        oss << "<p>mime: " << hus::html_escape(file.mime) << "</p><br>\n";
+        oss << "<pre>" << hus::html_escape(file.data) << "</pre>";
+    }
+    resp.body = oss.str();
     return;
 }
 

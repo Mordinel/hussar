@@ -18,6 +18,7 @@
 #pragma once
 
 #include "libs.h"
+#include "upload.h"
 #include "cookie.h"
 #include "session.h"
 
@@ -46,24 +47,9 @@ namespace hussar {
         std::unordered_map<std::string, std::string> get;
         std::unordered_map<std::string, std::string> post;
         std::unordered_map<std::string, Cookie> cookies;
+        std::unordered_map<std::string, UploadedFile> files;
 
     private:
-        /**
-         * extract the string after the host header name
-         */
-        std::string extract_header_content(std::string_view str)
-        {
-            size_t n;
-            std::ostringstream oss;
-
-            auto split_line = split_string<std::string_view>(str, ' ');
-            oss << split_line[1];
-            for (n = 2; n < split_line.size(); ++n) {
-                oss << " " << split_line[n];
-            }
-        
-            return strip_terminal_chars(oss.str());
-        }
     
         /**
          * extract the string before the first '?' in the document line
@@ -169,17 +155,17 @@ namespace hussar {
         {
             for (auto& line : headers) {
                 if (line.find("User-Agent: ", 0) != std::string::npos) {
-                    this->user_agent = this->extract_header_content(line);
+                    this->user_agent = extract_header_content(line);
                 } else if (line.find("Host: ", 0) != std::string::npos) {
-                    this->virtual_host = this->extract_header_content(line);
+                    this->virtual_host = extract_header_content(line);
                 } else if (line.find("Connection: ", 0) != std::string::npos) {
-                    this->connection = this->extract_header_content(line);
+                    this->connection = extract_header_content(line);
                 } else if (line.find("Content-Type: ", 0) != std::string::npos) {
-                    this->content_type = this->extract_header_content(line);
+                    this->content_type = extract_header_content(line);
                 } else if (line.find("Content-Length: ", 0) != std::string::npos) {
-                    this->content_length = this->extract_header_content(line);
+                    this->content_length = extract_header_content(line);
                 } else if (line.find("Cookie: ", 0) != std::string::npos) {
-                    this->cookies_raw = this->extract_header_content(line);
+                    this->cookies_raw = extract_header_content(line);
                 }
             }
         }
