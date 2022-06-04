@@ -35,7 +35,9 @@ void redirect_home(hus::Request& req, hus::Response& resp) {
 
 void home(hus::Request& req, hus::Response& resp) {
     if (hus::read_session(req.session_id, "username") != "") {
-        resp.body = "<h1>Welcome to the website, <b>" + hus::html_escape(hus::read_session(req.session_id, "username")) + "</b>!</h1><br><p>Click <a href=\"/logout\">HERE</a> to log out.</p>";
+        resp.body = "<h1>Welcome to the website, <b>" + hus::html_escape(hus::read_session(req.session_id, "username")) + "</b>!</h1><br>"
+                    "<p>Click <a href=\"/upload\">HERE</a> to go to the upload page</p>"
+                    "<p>Click <a href=\"/logout\">HERE</a> to log out.</p>";
     } else {
         resp.body = "<h1>Welcome to the website!</h1><br>"
                     "<p>Click <a href=\"/login\">HERE</a> to go to the login page</p>"
@@ -102,8 +104,9 @@ void logout(hus::Request& req, hus::Response& resp) {
 }
 
 void upload_page(hus::Request& req, hus::Response& resp) {
-    if (hus::read_session(req.session_id, "username") != "") {
-        redirect_home(req, resp);
+    if (hus::read_session(req.session_id, "username") == "") {
+        resp.code = "302";
+        resp.headers["Location"] = "/login?message=Log+in+to+upload+content";
         return;
     }
 
@@ -152,6 +155,12 @@ function upload() {
 }
 
 void upload(hus::Request& req, hus::Response& resp) {
+    if (hus::read_session(req.session_id, "username") == "") {
+        resp.code = "401";
+        resp.body = "<h1>401: Unauthorized</h1>";
+        return;
+    }
+
     std::ostringstream oss;
     oss << "<h1>Uploaded File Data:</h1><br>\n";
     for (auto& [key, file] : req.files) {
