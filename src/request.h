@@ -73,7 +73,6 @@ namespace hussar {
             size_t i;
             for (i = 0; s[i] && s[i] != '?'; ++i)
                 ;
-            i++;
         
             // return the rest of the string
             for (; s[i]; ++i) {
@@ -188,9 +187,9 @@ namespace hussar {
                 return false;
             }
         
-            std::string_view http_version_trunc = http_version_split[1].substr(0,3);
+            std::string http_version_trunc = http_version_split[1].substr(0,3);
             float version;
-            std::istringstream iss{std::string{http_version_trunc}};
+            std::istringstream iss{http_version_trunc};
             iss >> version;
             if (iss.fail()) {
                 return false;
