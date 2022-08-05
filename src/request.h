@@ -73,6 +73,7 @@ namespace hussar {
             size_t i;
             for (i = 0; s[i] && s[i] != '?'; ++i)
                 ;
+            ++i;
         
             // return the rest of the string
             for (; s[i]; ++i) {
