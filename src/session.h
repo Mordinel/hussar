@@ -117,10 +117,10 @@ namespace hussar {
      */
     std::string create_session()
     {
+        Session s;
+        std::string session_id = s.id;
         sessions_lock.lock();
-            Session s;
-            std::string session_id = s.id;
-            sessions[s.id] = std::move(s);
+            sessions.try_emplace(s.id, std::move(s));
         sessions_lock.unlock();
         return session_id;
     }
