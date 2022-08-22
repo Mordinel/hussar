@@ -178,7 +178,7 @@ void upload(hus::Request& req, hus::Response& resp) {
 
 int main(int argc, char* argv[]) {
     hus::Config config;
-    config.host         = "127.0.0.1"; // Socket Host
+    config.host         = "0.0.0.0";   // Socket Host
     config.port         = 8443;        // Socket Port
     config.thread_count = 0;           // Thread count
     config.private_key  = "key.pem";   // SSL Private key
