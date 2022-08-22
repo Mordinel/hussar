@@ -160,11 +160,17 @@ void upload(hus::Request& req, hus::Response& resp) {
     }
 
     std::ostringstream oss;
-    oss << "<h1>Uploaded File Data:</h1><br>\n";
+    oss << "<h1>Uploaded File:</h1><br>\n";
     for (auto& [key, file] : req.files) {
         oss << "<h2>" << hus::html_escape(file.id) << ": " << hus::html_escape(file.name) << "</h2><br>\n";
         oss << "<p>mime: " << hus::html_escape(file.mime) << "</p><br>\n";
-        oss << "<pre>" << hus::html_escape(file.data) << "</pre>";
+        //oss << "<pre>" << hus::html_escape(file.data) << "</pre>";
+        std::filesystem::path filename(file.name);
+        std::ofstream outfile("upload/"+filename.filename().string(), std::ios::binary);
+        outfile << file.data;
+        hus::print_lock.lock();
+            std::cout << "File uploaded: " << filename.filename() << std::endl;
+        hus::print_lock.unlock();
     }
     resp.body = oss.str();
     return;
