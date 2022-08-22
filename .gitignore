@@ -1,4 +1,5 @@
 hussar*
-hello_world
+auth_upload
+upload/*
 *.pch
 *.pem

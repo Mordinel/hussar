@@ -19,10 +19,10 @@ run:
 	./$(EXE) $(EXE_ARGS)
 
 clean:
-	rm -f $(EXE) hello_world
+	rm -f $(EXE) auth_upload
 
 example:
-	$(CXX) -I ./src/ ./examples/hello_world.cpp $(CXXFLAGS) -o hello_world
+	$(CXX) -I ./src/ ./examples/auth_upload.cpp $(CXXFLAGS) -o auth_upload
 
 certs:
 	openssl req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 9 -out cert.pem

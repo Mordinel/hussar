@@ -3,7 +3,7 @@ A threaded web server
 
 The default configuration can be changed in [main.cpp](./src/main.cpp)
 
-[Here](./examples/hello_world.cpp) is an example of usage in your own code
+[Here](./examples/auth_upload.cpp) is an example of usage in your own code
 
 ## building the file web server
 
